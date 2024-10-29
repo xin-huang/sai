@@ -26,6 +26,7 @@ from multiprocessing import Manager
 from multiprocessing import Process
 from threading import Thread
 from sai.utils.generators import DataGenerator
+from sai.utils.preprocessors import DataPreprocessor
 
 
 def monitor(shared_dict: dict, workers: list[multiprocessing.Process]) -> None:
@@ -52,7 +53,6 @@ def monitor(shared_dict: dict, workers: list[multiprocessing.Process]) -> None:
     - In case of a worker failure (process is no longer alive but hasn't marked 'Completed'),
       `terminate_all_workers` is called to gracefully shutdown all workers.
     - The function uses a 1-second interval for periodic checks to balance responsiveness with efficiency.
-
     """
     while True:
         # alive_workers = [worker.name for worker in workers if worker.is_alive()]
@@ -93,7 +93,6 @@ def terminate_all_workers(workers: list[multiprocessing.Process]) -> None:
       all work has been completed.
     - It first sends a `terminate` signal to each worker and then waits for each process to join,
       guaranteeing that no worker process is left hanging.
-
     """
     for w in workers:
         w.terminate()
@@ -102,8 +101,11 @@ def terminate_all_workers(workers: list[multiprocessing.Process]) -> None:
 
 
 def mp_manager(
-    job: callable, data_generator: DataGenerator, nprocess: int, **kwargs
-) -> list:
+    data_processor: DataPreprocessor,
+    data_generator: DataGenerator,
+    nprocess: int,
+    **kwargs,
+) -> None:
     """
     Manages the distribution of tasks across multiple processes for parallel execution, ensuring
     reproducibility through controlled seed values for each task.
@@ -111,12 +113,11 @@ def mp_manager(
     This function initializes a pool of worker processes and distributes tasks among them.
     Each task involves executing a specified job, potentially with different seeds for
     each repetition to ensure variability yet reproducibility in stochastic processes.
-    Results or errors are collected and returned as a list.
 
     Parameters
     ----------
-    job : callable
-        The function or callable object to be executed in parallel by each worker.
+    data_processor : DataPreprocessor
+        An instance of `DataPreprocessor` that prepares data for each task before execution.
     data_generator : DataGenerator
         An instance of a `DataGenerator` subclass that yields dictionaries with parameters for each task.
         The `run` method in the corresponding job instance must be compatible with the parameters returned
@@ -128,11 +129,6 @@ def mp_manager(
     **kwargs : dict
         Additional keyword arguments to be passed directly to the job function. These are
         forwarded as-is to each job invocation.
-
-    Returns
-    -------
-    res : list
-        A list of collected results from each executed job.
 
     Raises
     ------
@@ -146,7 +142,6 @@ def mp_manager(
       for task distribution and worker status monitoring.
     - To ensure smooth termination and cleanup, a monitoring thread is used to join all worker
       processes, and `cleanup_on_sigterm` is called to handle sudden terminations gracefully.
-
     """
     try:
         from pytest_cov.embed import cleanup_on_sigterm
@@ -167,7 +162,7 @@ def mp_manager(
         ]
 
         for params in data_generator.get():
-            in_queue.put((job, params))
+            in_queue.put((data_processor, params))
 
         try:
             for w in workers:
@@ -181,9 +176,8 @@ def mp_manager(
                 if items is None:
                     continue
                 if isinstance(items, tuple) and "error" in items:
-                    res = "error"
                     break
-                res.extend(items)
+                data_processor.process_items(items)
 
             for w in workers:
                 w.join()
@@ -191,8 +185,6 @@ def mp_manager(
             for w in workers:
                 w.terminate()
             monitor_thread.join()
-
-    return res
 
 
 def mp_worker(
@@ -235,7 +227,6 @@ def mp_worker(
       and exits.
     - If an exception occurs, it marks itself as 'Failed' and posts the error to `out_queue`
       before breaking the loop and terminating.
-
     """
     process_name = current_process().name
     shared_dict[process_name] = "Started"
@@ -243,8 +234,8 @@ def mp_worker(
     while True:
         try:
             try:
-                job, params = in_queue.get(timeout=5)
-                items = job.run(**params, **kwargs)
+                data_processor, params = in_queue.get(timeout=5)
+                items = data_processor.run(**params, **kwargs)
             except queue.Empty:
                 shared_dict[process_name] = "Completed"
                 return  # Exit the loop and end the worker process

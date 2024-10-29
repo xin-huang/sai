@@ -84,7 +84,7 @@ def positive_number(value: str) -> float:
 
 def between_zero_and_one(value: str) -> float:
     """
-    Validates if the provided string represents a number between 0 and 1 (exclusive).
+    Validates if the provided string represents a number between 0 and 1 (inclusive).
 
     Parameters
     ----------
@@ -107,8 +107,10 @@ def between_zero_and_one(value: str) -> float:
             value = float(value)
         except ValueError:
             raise argparse.ArgumentTypeError(f"{value} is not a valid number")
-        if not (0 < value < 1):
-            raise argparse.ArgumentTypeError(f"{value} is not between 0 and 1")
+        if not (0 <= value <= 1):
+            raise argparse.ArgumentTypeError(
+                f"{value} is not between 0 and 1 (inclusive)"
+            )
     return value
 
 

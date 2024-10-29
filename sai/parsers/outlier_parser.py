@@ -24,11 +24,26 @@ from sai.parsers.argument_validation import positive_int
 from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import existed_file
 from sai.parsers.argument_validation import between_zero_and_one
+from sai.sai import outlier
 
 
 def _run_outlier(args: argparse.Namespace) -> None:
-    """ """
-    pass
+    """
+    Runs the outlier detection process based on command-line arguments.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing input score file,
+        output directory, output prefix, and quantile threshold.
+    """
+    # Call the outlier function with parsed arguments
+    outlier(
+        score_file=args.score,
+        output_dir=args.output_dir,
+        output_prefix=args.output_prefix,
+        quantile=args.quantile,
+    )
 
 
 def add_outlier_parser(subparsers: argparse.ArgumentParser) -> None:
@@ -40,11 +55,32 @@ def add_outlier_parser(subparsers: argparse.ArgumentParser) -> None:
     ----------
     subparsers : argparse.ArgumentParser
         A command-line interface parser to be configured.
-
     """
-
-    parser = subparsers.add_parser("outlier", help="")
-    parser.add_argument("--score", type=existed_file, required=True, help="")
-    parser.add_argument("--output", type=str, required=True, help="")
-    parser.add_argument("--quantile", type=between_zero_and_one, default=0.99, help="")
+    parser = subparsers.add_parser(
+        "outlier", help="Detect and output outlier rows based on quantile thresholds."
+    )
+    parser.add_argument(
+        "--score",
+        type=existed_file,
+        required=True,
+        help="Path to the input score file.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        required=True,
+        help="Directory to save the output files.",
+    )
+    parser.add_argument(
+        "--output-prefix",
+        type=str,
+        required=True,
+        help="Prefix for the output filenames.",
+    )
+    parser.add_argument(
+        "--quantile",
+        type=between_zero_and_one,
+        default=0.99,
+        help="Quantile threshold for outlier detection, between 0 and 1.",
+    )
     parser.set_defaults(runner=_run_outlier)
