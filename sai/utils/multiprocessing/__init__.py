@@ -1,5 +1,6 @@
-# GNU General Public License v3.0
 # Copyright 2024 Xin Huang
+#
+# GNU General Public License v3.0
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,5 +18,4 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-from .genomic_dataclasses import *
-from .utils import *
+from .mp_manager import mp_manager

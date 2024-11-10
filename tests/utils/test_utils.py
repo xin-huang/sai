@@ -24,6 +24,7 @@ import numpy as np
 from unittest.mock import mock_open, patch
 from sai.utils import ChromosomeData
 from sai.utils import check_anc_allele
+from sai.utils import extract_group_data
 from sai.utils import filter_fixed_variants
 from sai.utils import filter_geno_data
 from sai.utils import flip_snps
@@ -32,6 +33,7 @@ from sai.utils import parse_ind_file
 from sai.utils import read_anc_allele
 from sai.utils import read_data
 from sai.utils import read_geno_data
+from sai.utils import split_genome
 
 
 def test_valid_file():
@@ -105,65 +107,12 @@ def test_filter_geno_data(sample_genotype_data):
     assert filtered.GT.shape == (3, 2, 2)
 
 
-# Test setup for read_geno_data
-@pytest.fixture
-def mock_vcf_data():
-    return {
-        "calldata/GT": np.array(
-            [[[0, 1], [1, 1]], [[1, 0], [1, -1]], [[0, 0], [0, 0]]]
-        ),
-        "variants/CHROM": np.array(["chr1", "chr1", "chr2"]),
-        "variants/POS": np.array([100, 200, 300]),
-        "variants/REF": np.array(["A", "T", "G"]),
-        "variants/ALT": np.array(["C", "A", "T"]),
-        "samples": ["sample1", "sample2"],
-    }
-
-
-@patch("sai.utils.allel.read_vcf")
-def test_read_geno_data(mock_read_vcf, mock_vcf_data):
-    # Mock the return value of read_vcf
-    mock_read_vcf.return_value = mock_vcf_data
-
-    # Simulate parsed sample categories
-    ind_samples = {"Category1": ["sample1"], "Category2": ["sample2"]}
-
-    # Call the function with the mock data
-    result = read_geno_data(
-        vcf="mock.vcf",
-        ind_samples=ind_samples,
-        anc_allele_file=None,
-        filter_missing=False,
-    )
-
-    # Verify the data structure for each chromosome
-    assert "chr1" in result
-    assert "chr2" in result
-
-    # Check data shape and values for chr1 using ChromosomeData attributes
-    chr1_data = result["chr1"]
-    assert chr1_data.POS.tolist() == [100, 200]
-    assert chr1_data.REF.tolist() == ["A", "T"]
-    assert chr1_data.ALT.tolist() == ["C", "A"]
-    assert chr1_data.GT.shape == (2, 2, 2)
-
-    # Check data shape and values for chr2 using ChromosomeData attributes
-    chr2_data = result["chr2"]
-    assert chr2_data.POS.tolist() == [300]
-    assert chr2_data.REF.tolist() == ["G"]
-    assert chr2_data.ALT.tolist() == ["T"]
-    assert chr2_data.GT.shape == (1, 2, 2)
-
-    # Verify all samples are included
-    assert result["samples"] == ["sample1", "sample2"]
-
-
 # Test from files
 @pytest.fixture
 def data():
     pytest.ref_ind_list = "./tests/data/test.ref.ind.list"
     pytest.tgt_ind_list = "./tests/data/test.tgt.ind.list"
-    pytest.vcf = "./tests/data/test.score.data.vcf"
+    pytest.vcf = "./tests/data/test.data.vcf"
     pytest.anc_allele = "./tests/data/test.anc.allele.bed"
 
 
@@ -188,20 +137,27 @@ def test_parse_ind_file_from_files(data):
 
 def test_read_geno_data_from_file(data):
     ref_ind = parse_ind_file(pytest.ref_ind_list)
-    d = read_geno_data(pytest.vcf, ref_ind, None, filter_missing=False)
+    d, s = read_geno_data(
+        vcf=pytest.vcf,
+        ind_samples=ref_ind,
+        chr_name="21",
+        anc_allele_file=None,
+        filter_missing=False,
+    )
 
-    vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ref_ind["ref1"])
+    vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ref_ind["ref1"], region="21")
 
     assert np.array_equal(ref_ind["ref1"], vcf["samples"])
-    assert np.array_equal(d["21"].POS, vcf["variants/POS"])
-    assert np.array_equal(d["21"].REF, vcf["variants/REF"])
-    assert np.array_equal(d["21"].ALT, vcf["variants/ALT"])
-    assert np.array_equal(d["21"].GT, vcf["calldata/GT"])
+    assert np.array_equal(d.POS, vcf["variants/POS"])
+    assert np.array_equal(d.REF, vcf["variants/REF"])
+    assert np.array_equal(d.ALT, vcf["variants/ALT"])
+    assert np.array_equal(d.GT, vcf["calldata/GT"])
 
 
 def test_read_data_from_file(data):
     ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
         vcf_file=pytest.vcf,
+        chr_name="21",
         ref_ind_file=pytest.ref_ind_list,
         tgt_ind_file=pytest.tgt_ind_list,
         src_ind_file=None,
@@ -217,23 +173,19 @@ def test_read_data_from_file(data):
     assert np.array_equal(rs, ref_samples)
     assert np.array_equal(ts, tgt_samples)
 
-    ref_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=rs["ref1"])
-    tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ts["tgt2"])
+    ref_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=rs["ref1"], region="21")
+    tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ts["tgt2"], region="21")
 
     assert np.array_equal(rs["ref1"], ref_vcf["samples"])
     assert np.array_equal(ts["tgt2"], tgt_vcf["samples"])
-    assert np.array_equal(ref_data["ref1"]["21"].POS, ref_vcf["variants/POS"])
-    assert np.array_equal(ref_data["ref1"]["21"].REF, ref_vcf["variants/REF"])
-    assert np.array_equal(ref_data["ref1"]["21"].ALT, ref_vcf["variants/ALT"])
-    assert np.array_equal(
-        ref_data["ref1"]["21"].GT, ref_vcf["calldata/GT"].reshape(19, 4)
-    )
-    assert np.array_equal(tgt_data["tgt2"]["21"].POS, tgt_vcf["variants/POS"])
-    assert np.array_equal(tgt_data["tgt2"]["21"].REF, tgt_vcf["variants/REF"])
-    assert np.array_equal(tgt_data["tgt2"]["21"].ALT, tgt_vcf["variants/ALT"])
-    assert np.array_equal(
-        tgt_data["tgt2"]["21"].GT, tgt_vcf["calldata/GT"].reshape(19, 4)
-    )
+    assert np.array_equal(ref_data["ref1"].POS, ref_vcf["variants/POS"])
+    assert np.array_equal(ref_data["ref1"].REF, ref_vcf["variants/REF"])
+    assert np.array_equal(ref_data["ref1"].ALT, ref_vcf["variants/ALT"])
+    assert np.array_equal(ref_data["ref1"].GT, ref_vcf["calldata/GT"].reshape(19, 4))
+    assert np.array_equal(tgt_data["tgt2"].POS, tgt_vcf["variants/POS"])
+    assert np.array_equal(tgt_data["tgt2"].REF, tgt_vcf["variants/REF"])
+    assert np.array_equal(tgt_data["tgt2"].ALT, tgt_vcf["variants/ALT"])
+    assert np.array_equal(tgt_data["tgt2"].GT, tgt_vcf["calldata/GT"].reshape(19, 4))
 
 
 def test_read_anc_allele(data):
@@ -249,7 +201,9 @@ def test_read_anc_allele(data):
 
 def test_get_ref_alt_allele(data):
     tgt_ind = parse_ind_file(pytest.tgt_ind_list)
-    tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=tgt_ind["tgt1"])
+    tgt_vcf = allel.read_vcf(
+        pytest.vcf, alt_number=1, samples=tgt_ind["tgt1"], region="21"
+    )
 
     ref_allele, alt_allele = get_ref_alt_allele(
         tgt_vcf["variants/REF"], tgt_vcf["variants/ALT"], tgt_vcf["variants/POS"]
@@ -305,6 +259,7 @@ def test_get_ref_alt_allele(data):
 def test_check_anc_allele(data):
     ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
         vcf_file=pytest.vcf,
+        chr_name="21",
         ref_ind_file=pytest.ref_ind_list,
         tgt_ind_file=pytest.tgt_ind_list,
         src_ind_file=None,
@@ -336,11 +291,11 @@ def test_check_anc_allele(data):
     )
     exp_tgt_pos = [2309, 7879, 48989]
 
-    assert np.array_equal(ref_data["ref1"]["21"].GT, exp_ref_gt.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt1"]["21"].GT, exp_tgt_gt1.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt2"]["21"].GT, exp_tgt_gt2.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt1"]["21"].POS, exp_tgt_pos)
-    assert np.array_equal(tgt_data["tgt2"]["21"].POS, exp_tgt_pos)
+    assert np.array_equal(ref_data["ref1"].GT, exp_ref_gt.reshape(3, 4))
+    assert np.array_equal(tgt_data["tgt1"].GT, exp_tgt_gt1.reshape(3, 4))
+    assert np.array_equal(tgt_data["tgt2"].GT, exp_tgt_gt2.reshape(3, 4))
+    assert np.array_equal(tgt_data["tgt1"].POS, exp_tgt_pos)
+    assert np.array_equal(tgt_data["tgt2"].POS, exp_tgt_pos)
 
 
 # Test data setup for filter_fixed_variants
@@ -348,39 +303,40 @@ def test_check_anc_allele(data):
 def sample_data():
     # Sample ChromosomeData with mixed fixed and non-fixed variants
     return {
-        "pop1": {
-            "chr1": ChromosomeData(
-                POS=np.array([100, 200, 300, 400]),
-                REF=np.array(["A", "G", "T", "C"]),
-                ALT=np.array(["C", "A", "G", "T"]),
-                GT=allel.GenotypeArray(
-                    [
-                        [[0, 0], [0, 0]],  # Fixed ref (AA, AA)
-                        [[1, 1], [1, 1]],  # Fixed alt (CC, CC)
-                        [[0, 1], [1, 1]],  # Mixed (AG, GG)
-                        [[0, 1], [0, 0]],  # Mixed (AC, AA)
-                    ]
-                ),
+        "pop1": ChromosomeData(
+            POS=np.array([100, 200, 300, 400]),
+            REF=np.array(["A", "G", "T", "C"]),
+            ALT=np.array(["C", "A", "G", "T"]),
+            GT=allel.GenotypeArray(
+                [
+                    [[0, 0], [0, 0]],  # Fixed ref (AA, AA)
+                    [[1, 1], [1, 1]],  # Fixed alt (CC, CC)
+                    [[0, 1], [1, 1]],  # Mixed (AG, GG)
+                    [[0, 1], [0, 0]],  # Mixed (AC, AA)
+                ]
             ),
-            "chr2": ChromosomeData(
-                POS=np.array([150, 250]),
-                REF=np.array(["T", "A"]),
-                ALT=np.array(["G", "C"]),
-                GT=allel.GenotypeArray(
-                    [
-                        [[0, 0], [0, 0]],  # Fixed ref (TT, TT)
-                        [[1, 1], [1, 1]],  # Fixed alt (CC, CC)
-                    ]
-                ),
+        ),
+        "pop2": ChromosomeData(
+            POS=np.array([150, 250]),
+            REF=np.array(["T", "A"]),
+            ALT=np.array(["G", "C"]),
+            GT=allel.GenotypeArray(
+                [
+                    [[0, 0], [0, 0]],  # Fixed ref (TT, TT)
+                    [[1, 1], [1, 1]],  # Fixed alt (CC, CC)
+                ]
             ),
-        }
+        ),
     }
 
 
 @pytest.fixture
 def sample_info():
     # Sample information for two individuals in 'pop1'
-    return {"pop1": ["sample1", "sample2"]}
+    return {
+        "pop1": ["sample1", "sample2"],
+        "pop2": ["sample3", "sample4"],
+    }
 
 
 def test_filter_fixed_variants(sample_data, sample_info):
@@ -389,22 +345,21 @@ def test_filter_fixed_variants(sample_data, sample_info):
 
     # Verify that fixed variants are removed
     assert "pop1" in filtered_data
-    assert "chr1" in filtered_data["pop1"]
-    assert "chr2" in filtered_data["pop1"]
+    assert "pop2" in filtered_data
 
     # Check that only non-fixed variants are retained for chr1
-    chr1_data = filtered_data["pop1"]["chr1"]
-    assert chr1_data.POS.tolist() == [300, 400]  # Positions with mixed genotypes
-    assert chr1_data.REF.tolist() == ["T", "C"]
-    assert chr1_data.ALT.tolist() == ["G", "T"]
-    assert chr1_data.GT.shape == (2, 2, 2)
+    pop1_data = filtered_data["pop1"]
+    assert pop1_data.POS.tolist() == [300, 400]  # Positions with mixed genotypes
+    assert pop1_data.REF.tolist() == ["T", "C"]
+    assert pop1_data.ALT.tolist() == ["G", "T"]
+    assert pop1_data.GT.shape == (2, 2, 2)
 
     # Verify that all variants in chr2 are filtered out, as they are fixed
-    chr2_data = filtered_data["pop1"]["chr2"]
-    assert chr2_data.POS.size == 0
-    assert chr2_data.REF.size == 0
-    assert chr2_data.ALT.size == 0
-    assert chr2_data.GT.size == 0
+    pop2_data = filtered_data["pop2"]
+    assert pop2_data.POS.size == 0
+    assert pop2_data.REF.size == 0
+    assert pop2_data.ALT.size == 0
+    assert pop2_data.GT.size == 0
 
 
 # Test data setup for flip_snps
@@ -442,3 +397,98 @@ def test_flip_snps(sample_chromosome_data):
     assert sample_chromosome_data.GT[2].tolist() == [[0, 0], [0, 1]]
     # Position 400: original [[1, 0], [0, 0]] -> flipped [[0, 1], [1, 1]]
     assert sample_chromosome_data.GT[3].tolist() == [[0, 1], [1, 1]]
+
+
+# Test data setup for extract_group_data
+@pytest.fixture
+def mock_chromosome_data():
+    # Create a mock ChromosomeData instance for testing
+    return ChromosomeData(
+        GT=np.array(
+            [
+                [[0, 0], [1, 1], [0, 1]],
+                [[1, 1], [1, -1], [0, 0]],
+                [[0, 0], [0, 1], [1, 1]],
+            ]
+        ),
+        POS=np.array([100, 200, 300]),
+        REF=np.array(["A", "T", "G"]),
+        ALT=np.array(["C", "A", "T"]),
+    )
+
+
+def test_extract_group_data(mock_chromosome_data):
+    # Mock all_samples and sample_groups for testing
+    all_samples = ["sample1", "sample2", "sample3"]
+    sample_groups = {"group1": ["sample1", "sample3"], "group2": ["sample2"]}
+
+    # Mock geno_data structure
+    geno_data = mock_chromosome_data
+
+    # Call the function
+    result = extract_group_data(
+        geno_data=geno_data, all_samples=all_samples, sample_groups=sample_groups
+    )
+
+    # Verify group1 data
+    group1_data = result["group1"]
+    assert group1_data.POS.tolist() == [100, 200, 300]
+    assert group1_data.REF.tolist() == ["A", "T", "G"]
+    assert group1_data.ALT.tolist() == ["C", "A", "T"]
+    assert group1_data.GT.shape == (3, 2, 2)
+    assert group1_data.GT[:, 0, :].tolist() == [[0, 0], [1, 1], [0, 0]]  # sample1
+    assert group1_data.GT[:, 1, :].tolist() == [[0, 1], [0, 0], [1, 1]]  # sample3
+
+    # Verify group2 data
+    group2_data = result["group2"]
+    assert group2_data.POS.tolist() == [100, 200, 300]
+    assert group2_data.REF.tolist() == ["A", "T", "G"]
+    assert group2_data.ALT.tolist() == ["C", "A", "T"]
+    assert group2_data.GT.shape == (3, 1, 2)
+    assert group2_data.GT[:, 0, :].tolist() == [[1, 1], [1, -1], [0, 1]]  # sample2
+
+
+# Sample test function for split_genome
+def test_split_genome():
+    # Test case 1: Basic case with regular windows
+    pos = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    window_size = 30
+    step_size = 20
+    result = split_genome(pos, window_size, step_size)
+    expected = [(0, 30), (20, 50), (40, 70), (60, 90), (70, 100)]
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+    # Test case 2: Window size exceeds range
+    pos = np.array([0, 50, 100])
+    window_size = 200
+    step_size = 50
+    with pytest.raises(
+        ValueError,
+        match="No windows could be created with the given window size and step size",
+    ):
+        split_genome(pos, window_size, step_size)
+
+    # Test case 3: Step size is larger than window size
+    pos = np.array([0, 10, 20, 30, 40, 50])
+    window_size = 20
+    step_size = 25
+
+    with pytest.raises(
+        ValueError, match="`step_size` cannot be greater than `window_size`"
+    ):
+        split_genome(pos, window_size, step_size)
+
+    # Test case 4: Handle empty `pos` array
+    pos = np.array([])
+    window_size = 30
+    step_size = 10
+    with pytest.raises(ValueError, match="`pos` array must not be empty"):
+        split_genome(pos, window_size, step_size)
+
+    # Test case 5: Final window reaching the last position
+    pos = np.array([0, 15, 30, 45, 60, 75, 90, 105])
+    window_size = 25
+    step_size = 20
+    result = split_genome(pos, window_size, step_size)
+    expected = [(0, 25), (20, 45), (40, 65), (60, 85), (80, 105)]
+    assert result == expected, f"Expected {expected}, but got {result}"
