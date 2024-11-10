@@ -1,0 +1,35 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10"]
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Add micromamba to system path
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-name: sai
+        environment-file: build-env.yaml
+    - name: Test with pytest
+      run: |
+        micromamba run -n sai pip install -e .
+        micromamba run -n sai pytest --cov=. --cov-report term-missing -vv
+        micromamba run -n sai coverage xml
+    - name: upload coverage report to codecov
+      uses: codecov/codecov-action@v4
+      with:
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          env_vars: OS,PYTHON
+          token: ${{ secrets.CODECOV_TOKEN }}

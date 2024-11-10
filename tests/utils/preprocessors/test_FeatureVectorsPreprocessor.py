@@ -104,10 +104,10 @@ def test_process_items(feature_preprocessor, tmp_path):
 
 @pytest.fixture
 def example_data():
-    pytest.example_vcf = "./examples/data/example.vcf"
-    pytest.example_ref_ind_list = "./examples/data/example.ref.ind.list"
-    pytest.example_tgt_ind_list = "./examples/data/example.tgt.ind.list"
-    pytest.example_src_ind_list = "./examples/data/example.src.ind.list"
+    pytest.example_vcf = "./tests/data/example.vcf"
+    pytest.example_ref_ind_list = "./tests/data/example.ref.ind.list"
+    pytest.example_tgt_ind_list = "./tests/data/example.tgt.ind.list"
+    pytest.example_src_ind_list = "./tests/data/example.src.ind.list"
 
 
 def test_run_from_file(example_data, tmp_path):
