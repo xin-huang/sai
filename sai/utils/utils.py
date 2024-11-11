@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -20,7 +20,6 @@
 
 import allel
 import numpy as np
-from dataclasses import dataclass
 from typing import Optional, Union
 from sai.utils.genomic_dataclasses import ChromosomeData
 
@@ -76,9 +75,11 @@ def read_geno_data(
     vcf: str,
     ind_samples: dict[str, list[str]],
     chr_name: str,
+    start: int = None,
+    end: int = None,
     anc_allele_file: Optional[str] = None,
     filter_missing: bool = True,
-) -> dict[str, Union[ChromosomeData, list[str]]]:
+) -> tuple[ChromosomeData, list[str], int]:
     """
     Read genotype data from a VCF file efficiently for a specified chromosome.
 
@@ -90,22 +91,33 @@ def read_geno_data(
         A dictionary where keys are categories (e.g., different sample groups), and values are lists of sample names.
     chr_name : str
         The name of the chromosome to read.
-    anc_allele_file : str or None
+    start: int, optional
+        The starting position (1-based, inclusive) on the chromosome. Default: None.
+    end: int, optional
+        The ending position (1-based, exclusive) on the chromosome. Default: None.
+    anc_allele_file : str, optional
         The name of the BED file containing ancestral allele information, or None if not provided.
-    filter_missing : bool
-        Indicates whether to filter out variants that are missing across all samples (default is True).
+    filter_missing : bool, optional
+        Indicates whether to filter out variants that are missing across all samples. Default: True.
 
     Returns
     -------
     chrom_data: ChromosomeData
         A ChromosomeData instance for the specified chromosome in the VCF.
+    samples: list
+        A list of samples in the data.
+    ploidy: int
+        Ploidy level of the organism.
     """
     try:
         # Load all samples from the VCF file
         all_samples = [sample for samples in ind_samples.values() for sample in samples]
 
         # Use region parameter to restrict to the specified chromosome
-        region = f"{chr_name}"
+        if (start is None) and (end is None):
+            region = f"{chr_name}"
+        else:
+            region = f"{chr_name}:{start}-{max(start, end-1)}"
         vcf_data = allel.read_vcf(
             vcf,
             fields=[
@@ -119,23 +131,35 @@ def read_geno_data(
             alt_number=1,
             samples=all_samples,
             region=region,  # Specify the chromosome region
+            tabix=None,
         )
     except Exception as e:
-        raise ValueError(f"Failed to read VCF file {vcf}: {e}")
+        raise ValueError(f"Failed to read VCF file {vcf} from {region}: {e}") from e
 
     # Convert genotype data to a more efficient GenotypeArray
+    if vcf_data is None:
+        return None, all_samples, None
+
     gt = allel.GenotypeArray(vcf_data.get("calldata/GT"))
     pos = vcf_data.get("variants/POS")
     ref = vcf_data.get("variants/REF")
     alt = vcf_data.get("variants/ALT")
+    ploidy = gt.shape[2]
 
     if gt is None or pos is None or ref is None or alt is None:
         raise ValueError("Invalid VCF file: Missing essential genotype data fields.")
 
     # Load ancestral allele data if provided
-    anc_allele = read_anc_allele(anc_allele_file) if anc_allele_file else None
+    if anc_allele_file:
+        anc_alleles = read_anc_allele(
+            anc_allele_file=anc_allele_file,
+            chr_name=chr_name,
+            start=start,
+            end=end,
+        )
+    else:
+        anc_alleles = None
 
-    # Initialize the ChromosomeData object directly without separating by chromosome
     sample_indices = [all_samples.index(s) for s in all_samples]
 
     chrom_data = ChromosomeData(
@@ -144,15 +168,19 @@ def read_geno_data(
 
     # Remove missing data if specified
     if filter_missing:
-        missing_index = chrom_data.GT.count_missing(axis=1) == len(sample_indices)
-        chrom_data = filter_geno_data(chrom_data, ~missing_index)
+        non_missing_index = chrom_data.GT.count_missing(axis=1) == 0
+        num_missing = len(non_missing_index) - np.sum(non_missing_index)
+        if num_missing != 0:
+            print(
+                f"Found {num_missing} variants with missing genotypes, removing them ..."
+            )
+        chrom_data = filter_geno_data(chrom_data, non_missing_index)
 
     # Check and incorporate ancestral alleles if the file is provided
-    if anc_allele:
-        chrom_data = check_anc_allele(chrom_data, anc_allele, chr_name)
+    if anc_alleles:
+        chrom_data = check_anc_allele(chrom_data, anc_alleles, chr_name)
 
-    # Return data as a dictionary without chromosome keys
-    return chrom_data, vcf_data.get("samples")
+    return chrom_data, vcf_data.get("samples"), ploidy
 
 
 def filter_geno_data(
@@ -188,6 +216,8 @@ def read_data(
     tgt_ind_file: Optional[str],
     src_ind_file: Optional[str],
     anc_allele_file: Optional[str],
+    start: int = None,
+    end: int = None,
     is_phased: bool = True,
     filter_ref: bool = True,
     filter_tgt: bool = True,
@@ -200,6 +230,7 @@ def read_data(
     Optional[dict[str, list[str]]],
     Optional[dict[str, dict[str, ChromosomeData]]],
     Optional[dict[str, list[str]]],
+    Optional[int],
 ]:
     """
     Helper function for reading data from reference, target, and source populations.
@@ -218,16 +249,20 @@ def read_data(
         File with source population sample information. None if not provided.
     anc_allele_file : str or None
         File with ancestral allele information. None if not provided.
+    start: int, optional
+        The starting position (1-based, inclusive) on the chromosome. Default: None.
+    end: int, optional
+        The ending position (1-based, exclusive) on the chromosome. Default: None.
     is_phased : bool, optional
-        Whether to use phased genotypes (default is True).
+        Whether to use phased genotypes. Default: True.
     filter_ref : bool, optional
-        Whether to filter fixed variants for reference data (default is True).
+        Whether to filter fixed variants for reference data. Default: True.
     filter_tgt : bool, optional
-        Whether to filter fixed variants for target data (default is True).
+        Whether to filter fixed variants for target data. Default: True.
     filter_src : bool, optional
-        Whether to filter fixed variants for source data (default is False).
+        Whether to filter fixed variants for source data. Default: False.
     filter_missing : bool, optional
-        Whether to filter out missing data (default is True).
+        Whether to filter out missing data. Default: True.
 
     Returns
     -------
@@ -243,6 +278,8 @@ def read_data(
         Genotype data from source populations, organized by category and chromosome.
     src_samples : dict or None
         Sample information from source populations.
+    ploidy: int or None
+        Ploidy level of the organism.
 
     Notes
     -----
@@ -282,11 +319,20 @@ def read_data(
 
     try:
         # Read VCF data
-        geno_data, all_samples = read_geno_data(
-            vcf_file, all_samples, chr_name, anc_allele_file, filter_missing
+        geno_data, all_samples, ploidy = read_geno_data(
+            vcf=vcf_file,
+            ind_samples=all_samples,
+            chr_name=chr_name,
+            start=start,
+            end=end,
+            anc_allele_file=anc_allele_file,
+            filter_missing=filter_missing,
         )
     except Exception as e:
         raise ValueError(f"Failed to read VCF data: {e}")
+
+    if geno_data is None:
+        return None, ref_samples, None, tgt_samples, None, src_samples, None
 
     # Separate reference, target, and source data
     ref_data = extract_group_data(geno_data, all_samples, ref_samples)
@@ -306,7 +352,7 @@ def read_data(
     reshape_genotypes(tgt_data, is_phased)
     reshape_genotypes(src_data, is_phased)
 
-    return ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples
+    return ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy
 
 
 def extract_group_data(
@@ -433,14 +479,23 @@ def get_ref_alt_allele(
     return {p: r for p, r in zip(pos, ref)}, {p: a for p, a in zip(pos, alt)}
 
 
-def read_anc_allele(anc_allele_file: str) -> dict[str, dict[int, str]]:
+def read_anc_allele(
+    anc_allele_file: str, chr_name: str, start: int = None, end: int = None
+) -> dict[str, dict[int, str]]:
     """
-    Reads ancestral allele information from a BED file.
+    Reads ancestral allele information from a BED file for a specified chromosome,
+    optionally within a specified position range.
 
     Parameters
     ----------
     anc_allele_file : str
         Path to the BED file containing ancestral allele information.
+    chr_name : str
+        Name of the chromosome to read.
+    start : int, optional
+        Start position (1-based, inclusive) of the region to filter. If None, no lower bound.
+    end : int, optional
+        End position (1-based, inclusive) of the region to filter. If None, no upper bound.
 
     Returns
     -------
@@ -452,22 +507,33 @@ def read_anc_allele(anc_allele_file: str) -> dict[str, dict[int, str]]:
     FileNotFoundError
         If the ancestral allele file is not found.
     ValueError
-        If no ancestral allele information is found in the file.
+        If no ancestral allele information is found for the specified chromosome (and region if specified).
     """
-    anc_allele = {}
+    anc_alleles = {}
     try:
         with open(anc_allele_file, "r") as f:
             for line in f:
                 e = line.rstrip().split()
                 chrom, pos, allele = e[0], int(e[2]), e[3]
-                anc_allele.setdefault(chrom, {})[pos] = allele
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File {anc_allele_file} not found.")
+                if chrom != chr_name:
+                    continue
+                if (start is not None and pos < start) or (
+                    end is not None and pos > end
+                ):
+                    continue
+                anc_alleles.setdefault(chrom, {})[pos] = allele
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"File {anc_allele_file} not found.") from exc
 
-    if not anc_allele:
-        raise ValueError("No ancestral allele is found! Please check your data.")
+    if not anc_alleles:
+        if start is not None or end is not None:
+            raise ValueError(
+                f"No ancestral allele is found for chromosome {chr_name} in the region {start}-{end}."
+            )
+        else:
+            raise ValueError(f"No ancestral allele is found for chromosome {chr_name}.")
 
-    return anc_allele
+    return anc_alleles
 
 
 def check_anc_allele(
@@ -580,19 +646,9 @@ def split_genome(
         win_start = 0
 
     # Create windows based on step size and window size
-    while win_start + window_size <= pos[-1]:
+    while win_start < pos[-1]:
         win_end = win_start + window_size
         window_positions.append((win_start, win_end))
         win_start += step_size
-
-    # Check if any windows were created; if not, raise an error or handle appropriately
-    if not window_positions:
-        raise ValueError(
-            "No windows could be created with the given window size and step size."
-        )
-
-    # Handle remaining positions if the last window doesn't reach the end of `pos`
-    if window_positions[-1][1] < pos[-1]:
-        window_positions.append((pos[-1] - window_size, pos[-1]))
 
     return window_positions

@@ -20,16 +20,19 @@
 
 import pytest
 import numpy as np
-from sai.stats.features import calc_u, calc_q
-from sai.utils.generators import WindowDataGenerator
-from sai.utils.preprocessors import FeatureVectorsPreprocessor
+from sai.utils.generators import WindowGenerator
+from sai.utils.preprocessors import FeaturePreprocessor
 
 
 @pytest.fixture
 def feature_preprocessor():
-    # Create an instance of FeatureVectorsPreprocessor with thresholds and temporary output file
-    return FeatureVectorsPreprocessor(
-        w=0.3, x=0.5, y=[0.2, 0.4], output_file="test_output.tsv"
+    # Create an instance of FeaturePreprocessor with thresholds and temporary output file
+    return FeaturePreprocessor(
+        w=0.3,
+        x=0.5,
+        y=[("=", 0.2), ("=", 0.4)],
+        output_file="test_output.tsv",
+        stat_type="Q95",
     )
 
 
@@ -49,6 +52,8 @@ def test_run(feature_preprocessor):
         np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]]),
     ]
 
+    pos = np.array([100, 200, 300])
+
     # Run the method
     result = feature_preprocessor.run(
         chr_name=chr_name,
@@ -57,6 +62,7 @@ def test_run(feature_preprocessor):
         src_pop_list=src_pop_list,
         start=start,
         end=end,
+        pos=pos,
         ref_gts=ref_gts,
         tgt_gts=tgt_gts,
         src_gts_list=src_gts_list,
@@ -64,14 +70,14 @@ def test_run(feature_preprocessor):
     )
 
     # Check that the result contains the expected keys
-    assert result["chr_name"] == chr_name
-    assert result["start"] == start
-    assert result["end"] == end
-    assert result["ref_pop"] == ref_pop
-    assert result["tgt_pop"] == tgt_pop
-    assert result["src_pop_list"] == src_pop_list
-    assert "u_statistic" in result
-    assert "q_statistic" in result
+    assert result[0]["chr_name"] == chr_name
+    assert result[0]["start"] == start
+    assert result[0]["end"] == end
+    assert result[0]["ref_pop"] == ref_pop
+    assert result[0]["tgt_pop"] == tgt_pop
+    assert result[0]["src_pop_list"] == src_pop_list
+    assert "statistic" in result[0]
+    assert "candidates" in result[0]
 
 
 def test_process_items(feature_preprocessor, tmp_path):
@@ -87,18 +93,21 @@ def test_process_items(feature_preprocessor, tmp_path):
         "ref_pop": "ref1",
         "tgt_pop": "tgt1",
         "src_pop_list": ["src1", "src2"],
-        "u_statistic": 5,
-        "q_statistic": 0.75,
+        "nsnps": 10,
+        "statistic": 5,
+        "candidates": np.array(["1", "2", "3", "4", "5"]),
     }
 
     # Run the process_items method
-    feature_preprocessor.process_items(items)
+    feature_preprocessor.process_items([items])
 
     # Check the output file content
     with open(temp_output, "r") as f:
         lines = f.readlines()
         assert len(lines) == 1  # Ensure only one line is written
-        expected_output = "21\t1000\t2000\tref1\ttgt1\tsrc1,src2\t5\t0.75\n"
+        expected_output = (
+            "21\t1000\t2000\tref1\ttgt1\tsrc1,src2\t10\t5\t21:1,21:2,21:3,21:4,21:5\n"
+        )
         assert lines[0] == expected_output
 
 
@@ -111,23 +120,27 @@ def example_data():
 
 
 def test_run_from_file(example_data, tmp_path):
-    # Set up the WindowDataGenerator
-    generator = WindowDataGenerator(
+    # Set up the WindowGenerator
+    generator = WindowGenerator(
         vcf_file=pytest.example_vcf,
         chr_name=21,
         ref_ind_file=pytest.example_ref_ind_list,
         tgt_ind_file=pytest.example_tgt_ind_list,
         src_ind_file=pytest.example_src_ind_list,
-        win_len=3333,
-        win_step=3333,
+        win_len=6666,
+        win_step=6666,
     )
 
     # Create a temporary output file path using tmp_path
     temp_output_file = tmp_path / "output.tsv"
 
-    # Initialize the FeatureVectorsPreprocessor with the temporary output file path
-    preprocessor = FeatureVectorsPreprocessor(
-        w=0.3, x=0.5, y=[1], output_file=str(temp_output_file)
+    # Initialize the FeaturePreprocessor with the temporary output file path
+    preprocessor = FeaturePreprocessor(
+        w=0.3,
+        x=0.5,
+        y=[("=", 1)],
+        output_file=str(temp_output_file),
+        stat_type="U",
     )
 
     # Run the generator and preprocessor
@@ -139,14 +152,14 @@ def test_run_from_file(example_data, tmp_path):
             src_pop_list=window_data["src_pop_list"],
             start=window_data["start"],
             end=window_data["end"],
+            pos=window_data["pos"],
             ref_gts=window_data["ref_gts"],
             tgt_gts=window_data["tgt_gts"],
             src_gts_list=window_data["src_gts_list"],
             ploidy=window_data["ploidy"],
         )
         preprocessor.process_items(items)
-        assert items["u_statistic"] == 3
-        assert items["q_statistic"] == 0.9
+        assert items[0]["statistic"] == 3
 
     # Check that the temporary file was created and is not empty
     assert temp_output_file.exists()

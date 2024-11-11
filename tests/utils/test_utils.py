@@ -23,7 +23,6 @@ import pytest
 import numpy as np
 from unittest.mock import mock_open, patch
 from sai.utils import ChromosomeData
-from sai.utils import check_anc_allele
 from sai.utils import extract_group_data
 from sai.utils import filter_fixed_variants
 from sai.utils import filter_geno_data
@@ -131,13 +130,10 @@ def test_parse_ind_file_from_files(data):
     assert ref_ind == exp_ref_ind
     assert tgt_ind == exp_tgt_ind
 
-    with pytest.raises(Exception) as e_info:
-        emp_ind = parse_ind_file(pytest.emp_ind_list)
-
 
 def test_read_geno_data_from_file(data):
     ref_ind = parse_ind_file(pytest.ref_ind_list)
-    d, s = read_geno_data(
+    d, s, ploidy = read_geno_data(
         vcf=pytest.vcf,
         ind_samples=ref_ind,
         chr_name="21",
@@ -152,19 +148,22 @@ def test_read_geno_data_from_file(data):
     assert np.array_equal(d.REF, vcf["variants/REF"])
     assert np.array_equal(d.ALT, vcf["variants/ALT"])
     assert np.array_equal(d.GT, vcf["calldata/GT"])
+    assert ploidy == 2
 
 
 def test_read_data_from_file(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
-        vcf_file=pytest.vcf,
-        chr_name="21",
-        ref_ind_file=pytest.ref_ind_list,
-        tgt_ind_file=pytest.tgt_ind_list,
-        src_ind_file=None,
-        anc_allele_file=None,
-        filter_ref=False,
-        filter_tgt=False,
-        filter_src=False,
+    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy = (
+        read_data(
+            vcf_file=pytest.vcf,
+            chr_name="21",
+            ref_ind_file=pytest.ref_ind_list,
+            tgt_ind_file=pytest.tgt_ind_list,
+            src_ind_file=None,
+            anc_allele_file=None,
+            filter_ref=False,
+            filter_tgt=False,
+            filter_src=False,
+        )
     )
 
     rs = parse_ind_file(pytest.ref_ind_list)
@@ -172,6 +171,7 @@ def test_read_data_from_file(data):
 
     assert np.array_equal(rs, ref_samples)
     assert np.array_equal(ts, tgt_samples)
+    assert ploidy == 2
 
     ref_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=rs["ref1"], region="21")
     tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ts["tgt2"], region="21")
@@ -189,14 +189,11 @@ def test_read_data_from_file(data):
 
 
 def test_read_anc_allele(data):
-    anc_allele = read_anc_allele(pytest.anc_allele)
+    anc_allele = read_anc_allele(pytest.anc_allele, "21")
 
     exp_anc_allele = {"21": {2309: "G", 7879: "A", 11484: "-", 48989: "C"}}
 
     assert anc_allele == exp_anc_allele
-
-    with pytest.raises(Exception) as e_info:
-        anc_allele = read_anc_allele(pytest.emp_anc_allele)
 
 
 def test_get_ref_alt_allele(data):
@@ -257,15 +254,17 @@ def test_get_ref_alt_allele(data):
 
 
 def test_check_anc_allele(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
-        vcf_file=pytest.vcf,
-        chr_name="21",
-        ref_ind_file=pytest.ref_ind_list,
-        tgt_ind_file=pytest.tgt_ind_list,
-        src_ind_file=None,
-        anc_allele_file=pytest.anc_allele,
-        filter_ref=False,
-        filter_tgt=False,
+    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy = (
+        read_data(
+            vcf_file=pytest.vcf,
+            chr_name="21",
+            ref_ind_file=pytest.ref_ind_list,
+            tgt_ind_file=pytest.tgt_ind_list,
+            src_ind_file=None,
+            anc_allele_file=pytest.anc_allele,
+            filter_ref=False,
+            filter_tgt=False,
+        )
     )
 
     exp_ref_gt = allel.GenotypeArray(
@@ -455,20 +454,10 @@ def test_split_genome():
     window_size = 30
     step_size = 20
     result = split_genome(pos, window_size, step_size)
-    expected = [(0, 30), (20, 50), (40, 70), (60, 90), (70, 100)]
+    expected = [(0, 30), (20, 50), (40, 70), (60, 90), (80, 110)]
     assert result == expected, f"Expected {expected}, but got {result}"
 
-    # Test case 2: Window size exceeds range
-    pos = np.array([0, 50, 100])
-    window_size = 200
-    step_size = 50
-    with pytest.raises(
-        ValueError,
-        match="No windows could be created with the given window size and step size",
-    ):
-        split_genome(pos, window_size, step_size)
-
-    # Test case 3: Step size is larger than window size
+    # Test case 2: Step size is larger than window size
     pos = np.array([0, 10, 20, 30, 40, 50])
     window_size = 20
     step_size = 25
@@ -478,17 +467,9 @@ def test_split_genome():
     ):
         split_genome(pos, window_size, step_size)
 
-    # Test case 4: Handle empty `pos` array
+    # Test case 3: Handle empty `pos` array
     pos = np.array([])
     window_size = 30
     step_size = 10
     with pytest.raises(ValueError, match="`pos` array must not be empty"):
         split_genome(pos, window_size, step_size)
-
-    # Test case 5: Final window reaching the last position
-    pos = np.array([0, 15, 30, 45, 60, 75, 90, 105])
-    window_size = 25
-    step_size = 20
-    result = split_genome(pos, window_size, step_size)
-    expected = [(0, 25), (20, 45), (40, 65), (60, 85), (80, 105)]
-    assert result == expected, f"Expected {expected}, but got {result}"

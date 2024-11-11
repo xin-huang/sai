@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -19,9 +19,6 @@
 
 
 import argparse
-import sys
-from sai.parsers.argument_validation import positive_int
-from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import existed_file
 from sai.parsers.argument_validation import between_zero_and_one
 from sai.sai import outlier
@@ -35,13 +32,12 @@ def _run_outlier(args: argparse.Namespace) -> None:
     ----------
     args : argparse.Namespace
         Parsed command-line arguments containing input score file,
-        output directory, output prefix, and quantile threshold.
+        output file, quantile threshold, and stat type.
     """
     # Call the outlier function with parsed arguments
     outlier(
         score_file=args.score,
-        output_dir=args.output_dir,
-        output_prefix=args.output_prefix,
+        output=args.output,
         quantile=args.quantile,
     )
 
@@ -66,21 +62,15 @@ def add_outlier_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Path to the input score file.",
     )
     parser.add_argument(
-        "--output-dir",
+        "--output",
         type=str,
         required=True,
-        help="Directory to save the output files.",
-    )
-    parser.add_argument(
-        "--output-prefix",
-        type=str,
-        required=True,
-        help="Prefix for the output filenames.",
+        help="Path to save the output file.",
     )
     parser.add_argument(
         "--quantile",
         type=between_zero_and_one,
         default=0.99,
-        help="Quantile threshold for outlier detection, between 0 and 1.",
+        help="Quantile threshold for outlier detection, between 0 and 1. Default: 0.99.",
     )
     parser.set_defaults(runner=_run_outlier)

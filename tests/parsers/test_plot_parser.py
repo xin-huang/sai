@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -20,7 +20,7 @@
 
 import pytest
 import argparse
-from sai.parsers.outlier_parser import add_outlier_parser
+from sai.parsers.plot_parser import add_plot_parser
 
 
 @pytest.fixture
@@ -28,26 +28,43 @@ def parser():
     # Initialize the argument parser with a subparser for the 'outlier' command
     main_parser = argparse.ArgumentParser()
     subparsers = main_parser.add_subparsers(dest="command")
-    add_outlier_parser(subparsers)
+    add_plot_parser(subparsers)
     return main_parser
 
 
-def test_add_outlier_parser(parser):
+def test_add_plot_parser(parser):
     # Simulate command-line arguments to parse
     args = parser.parse_args(
         [
-            "outlier",
-            "--score",
-            "tests/data/example.scores",
+            "plot",
+            "--outlier",
+            "tests/data/test.outliers.tsv",
             "--output",
-            "output/test_outliers.tsv",
-            "--quantile",
-            "0.95",
+            "output.png",
+            "--xlabel",
+            "Test X Label",
+            "--ylabel",
+            "Test Y Label",
+            "--title",
+            "Test Title",
+            "--figsize-x",
+            "8",
+            "--figsize-y",
+            "5",
+            "--dpi",
+            "200",
+            "--alpha",
+            "0.5",
         ]
     )
 
-    # Validate parsed arguments
-    assert args.command == "outlier"
-    assert args.score == "tests/data/example.scores"
-    assert args.output == "output/test_outliers.tsv"
-    assert args.quantile == 0.95
+    # Check if the attributes are set correctly
+    assert args.outlier == "tests/data/test.outliers.tsv"
+    assert args.output == "output.png"
+    assert args.xlabel == "Test X Label"
+    assert args.ylabel == "Test Y Label"
+    assert args.title == "Test Title"
+    assert args.figsize_x == 8
+    assert args.figsize_y == 5
+    assert args.dpi == 200
+    assert args.alpha == 0.5

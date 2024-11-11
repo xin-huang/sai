@@ -18,7 +18,6 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-import pytest
 from unittest.mock import patch, MagicMock
 from sai.__main__ import main
 

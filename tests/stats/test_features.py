@@ -23,8 +23,7 @@ import numpy as np
 from sai.stats.features import calc_u
 from sai.stats.features import calc_q
 from sai.stats.features import calc_freq
-from sai.stats.features import calc_seq_div
-from sai.stats.features import calc_rd
+from sai.stats.features import compute_matching_loci
 
 
 def test_calc_u_basic():
@@ -32,16 +31,21 @@ def test_calc_u_basic():
     ref_gts = np.array([[0, 0, 1], [0, 0, 0], [1, 1, 1]])
     tgt_gts = np.array([[1, 1, 1], [1, 0, 0], [0, 1, 0]])
     src_gts = np.array([[0, 0, 0], [1, 1, 1], [1, 0, 1]])
+    pos = np.array([0, 1, 2])
 
-    # Parameters w, x, y values
-    w, x, y = 0.5, 0.5, 0
-
-    # Expected output
+    w, x, y = 0.5, 0.5, ("=", 0)
     expected_count = 1  # Only the first site meets the criteria
-
-    # Run test
-    result = calc_u(ref_gts, tgt_gts, [src_gts], w, x, [y])
+    expected_positions = np.array([0])
+    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
     assert result == expected_count
+    assert np.array_equal(loci_positions, expected_positions)
+
+    w, x, y = 0.5, 0.5, ("=", 1)
+    expected_count = 0
+    expected_positions = np.array([])
+    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y], True)
+    assert result == expected_count
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_u_no_match():
@@ -49,14 +53,16 @@ def test_calc_u_no_match():
     ref_gts = np.array([[0, 1, 1], [1, 1, 1]])
     tgt_gts = np.array([[0, 0, 0], [1, 0, 1]])
     src_gts = np.array([[1, 1, 1], [1, 1, 1]])
+    pos = np.array([0, 1])
 
     # Parameters for testing with no matching sites
-    w, x, y = 0.3, 0.5, 0
+    w, x, y = 0.3, 0.5, ("=", 0)
 
     expected_count = 0  # No sites meet the criteria
-
-    result = calc_u(ref_gts, tgt_gts, [src_gts], w, x, [y])
+    expected_positions = np.array([])
+    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
     assert result == expected_count
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_u_all_match():
@@ -64,14 +70,17 @@ def test_calc_u_all_match():
     ref_gts = np.array([[0, 0, 0], [0, 0, 0]])
     tgt_gts = np.array([[1, 1, 1], [1, 1, 1]])
     src_gts = np.array([[0, 0, 0], [0, 0, 0]])
+    pos = np.array([0, 1])
 
     # Parameters for testing all sites matching
-    w, x, y = 0.5, 0.5, 0
+    w, x, y = 0.5, 0.5, ("=", 0)
 
     expected_count = 2  # All sites meet the criteria
+    expected_positions = np.array([0, 1])
 
-    result = calc_u(ref_gts, tgt_gts, [src_gts], w, x, [y])
+    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
     assert result == expected_count
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_basic():
@@ -79,35 +88,48 @@ def test_calc_q_basic():
     ref_gts = np.array([[0, 0, 1], [0, 0, 0], [1, 1, 1]])
     tgt_gts = np.array([[0, 1, 1], [0, 0, 1], [1, 1, 1]])
     src_gts = np.array([[1, 1, 1], [0, 1, 1], [1, 1, 1]])
-    w, y, quantile = 0.5, 1.0, 0.95
+    pos = np.array([0, 1, 2])
+    w, y, quantile = 0.5, ("=", 1.0), 0.95
 
     # Expected output
     expected_result = 0.66667  # Only the first site meets the criteria
+    expected_positions = np.array([0])
 
     # Run test
-    result = calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
+    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
+
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile, True
+    )
+    assert np.isclose(
+        result, expected_result
+    ), f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_no_match():
     # Test data with no matching loci
-    ref_gts = np.array([[0, 0, 1], [1, 1, 1]])
+    ref_gts = np.array([[0, 0, 1], [0, 0, 0]])
     tgt_gts = np.array([[0, 1, 1], [1, 1, 1]])
     src_gts = np.array([[1, 1, 1], [1, 1, 1]])
+    pos = np.array([0, 1])
     w, y, quantile = (
         0.3,
-        0.0,
+        ("=", 0.0),
         0.95,
     )  # No tgt_gts frequencies < w and no src_gts frequencies == y
 
     # Expected output
-    expected_result = np.nan  # No loci meet criteria, should return NaN
+    expected_positions = np.array([])
 
     # Run test
-    result = calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
+    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
     assert np.isnan(result), f"Expected NaN, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_different_quantile():
@@ -115,18 +137,21 @@ def test_calc_q_different_quantile():
     ref_gts = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 1]])
     tgt_gts = np.array([[0, 1, 1], [1, 1, 1], [1, 1, 1]])
     src_gts = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]])
-    w, y, quantile = 0.5, 1.0, 0.5
+    pos = np.array([0, 1, 2])
+    w, y, quantile = 0.5, ("=", 1.0), 0.5
 
     # Expected output
     expected_result = (
         1.0  # 50% quantile (median) of [1.0, 1.0, 1.0] in tgt_gts that meets conditions
     )
+    expected_positions = np.array([1, 2])
 
     # Run test
-    result = calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
+    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_edge_case():
@@ -134,16 +159,19 @@ def test_calc_q_edge_case():
     ref_gts = np.array([[0, 0, 1], [0, 0, 0], [1, 1, 1]])
     tgt_gts = np.array([[0, 1, 1], [1, 1, 1], [0, 0, 0]])
     src_gts = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]])
-    w, y, quantile = 0.95, 1.0, 0.95
+    pos = np.array([0, 1, 2])
+    w, y, quantile = 0.95, ("=", 1.0), 0.95
 
     # Expected output
-    expected_result = 1.0  # Only one matching site in tgt_gts
+    expected_result = 0.9666666666666667
+    expected_positions = np.array([0, 1])
 
     # Run test
-    result = calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
+    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_invalid_quantile():
@@ -151,13 +179,14 @@ def test_calc_q_invalid_quantile():
     ref_gts = np.array([[0, 0, 1]])
     tgt_gts = np.array([[0, 1, 1]])
     src_gts = np.array([[1, 1, 1]])
-    w, y, quantile = 0.5, 1.0, 1.5  # Invalid quantile (out of [0, 1] range)
+    pos = np.array([0])
+    w, y, quantile = 0.5, ("=", 1.0), 1.5  # Invalid quantile (out of [0, 1] range)
 
     with pytest.raises(
         ValueError,
-        match="Parameters w and quantile must be within the range \\[0, 1\\]",
+        match="Parameter quantile must be within the range \\[0, 1\\]",
     ):
-        calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
+        calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
 
 
 def test_calc_u_with_two_sources():
@@ -166,35 +195,55 @@ def test_calc_u_with_two_sources():
     tgt_gts = np.array([[0, 1, 1], [0, 0, 1], [1, 1, 1]])
     src_gts1 = np.array([[1, 1, 1], [0, 1, 1], [1, 1, 1]])
     src_gts2 = np.array([[1, 1, 1], [0, 1, 1], [1, 1, 1]])
-    w, x, y_list = 0.5, 0.5, [1.0, 1.0]
+    pos = np.array([0, 1, 2])
+    w, x, y_list = 0.5, 0.5, [("=", 1.0), ("=", 1.0)]
 
     # Expected result: only loci where ref_freq < w, tgt_freq > x, src_freq1 == y1, and src_freq2 == y2
     expected_result = 1  # Only one locus meets all criteria
+    expected_positions = np.array([0])
 
     # Run test
-    result = calc_u(ref_gts, tgt_gts, [src_gts1, src_gts2], w, x, y_list)
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list
+    )
     assert result == expected_result, f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_calc_q_with_two_sources():
     # Test data
-    ref_gts = np.array([[0, 0, 0], [0, 1, 1], [1, 1, 1], [0, 0, 1]])
+    ref_gts = np.array([[1, 1, 0], [0, 1, 1], [1, 1, 1], [0, 0, 1]])
     tgt_gts = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [1, 1, 1]])
     src_gts1 = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 1]])
     src_gts2 = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0], [1, 1, 1]])
-    w, y_list, quantile = 0.5, [1.0, 1.0], 0.95
+    pos = np.array([0, 1, 2, 3])
+    w, y_list, quantile = 0.5, [("=", 1), ("=", 1)], 0.95
 
     # Expected result: 95% quantile of the filtered tgt_gts frequencies
     expected_result = np.nan
+    expected_positions = np.array([])
 
     # Run test
-    result = calc_q(ref_gts, tgt_gts, [src_gts1, src_gts2], w, y_list, quantile)
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, quantile
+    )
     if np.isnan(expected_result):
         assert np.isnan(result), f"Expected NaN, got {result}"
     else:
         assert np.isclose(
             result, expected_result
         ), f"Expected {expected_result}, got {result}"
+    assert np.array_equal(loci_positions, expected_positions)
+
+    w, x, y_list = 0.5, 0.8, [("=", 1), ("=", 0)]
+    expected_result = 1
+    expected_positions = np.array([0])
+
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list
+    )
+    assert np.isclose(result, expected_result)
+    assert np.array_equal(loci_positions, expected_positions)
 
 
 def test_phased_data():
@@ -246,85 +295,114 @@ def test_unphased_tetraploid_data():
     )
 
 
-def test_calc_seq_div():
-    # Test case 1: Simple case with known divergence
-    gts1 = np.array([[0, 1], [1, 0]])
-    gts2 = np.array([[1, 0], [0, 1]])
-    expected_divergence = np.array([[2, 0], [0, 2]])
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 1 with result {result}"
+def test_compute_matching_loci():
+    # Sample genotype data
+    ref_gts = np.array([[0, 1, 0], [1, 1, 0], [0, 0, 1]])
+    tgt_gts = np.array([[1, 1, 0], [0, 1, 1], [1, 1, 1]])
+    src_gts_list = [
+        np.array([[0, 0, 1], [1, 1, 0], [0, 1, 1]]),  # src1
+        np.array([[1, 1, 0], [1, 0, 0], [1, 1, 0]]),  # src2
+    ]
 
-    # Test case 2: Same populations (should result in zero divergence)
-    gts1 = np.array([[1, 1], [1, 1]])
-    gts2 = np.array([[1, 1], [1, 1]])
-    expected_divergence = np.array([[0, 0], [0, 0]])
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 2 with result {result}"
+    # Define parameters with all possible conditions
+    conditions = [("=", 0.5), ("<", 0.4), (">", 0.3), ("<=", 0.6), (">=", 0.2)]
+    ploidy = 2
+    anc_allele_available = False
 
-    # Test case 3:
-    gts1 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    gts2 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    expected_divergence = np.array(
-        [
-            [0, 2, 2],
-            [2, 0, 2],
-            [2, 2, 0],
-        ]
-    )
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 3 with result {result}"
+    for y_condition in conditions:
+        y_list = [y_condition, y_condition]  # Apply the same condition to both sources
 
-    # Test case 4:
-    gts1 = np.array(
-        [
-            [0, 1, 2],
-            [1, 2, 0],
-            [0, 2, 1],
-        ]
-    )
-    gts2 = np.array(
-        [
-            [0, 1, 2],
-            [1, 2, 0],
-            [0, 2, 1],
-        ]
-    )
-    expected_divergence = np.array(
-        [
-            [0, 3, 3],
-            [3, 0, 3],
-            [3, 3, 0],
-        ]
-    )
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 4 with result {result}"
+        # Call the function
+        ref_freq, tgt_freq, condition = compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            0.5,
+            y_list,
+            ploidy,
+            anc_allele_available,
+        )
 
+        # Assertions to verify the outputs
+        assert ref_freq.shape == (3,)
+        assert tgt_freq.shape == (3,)
+        assert condition.shape == (3,)
+        assert np.all((ref_freq >= 0) & (ref_freq <= 1))
+        assert np.all((tgt_freq >= 0) & (tgt_freq <= 1))
+        assert np.all(
+            np.logical_or(condition == True, condition == False)
+        )  # Ensure condition is boolean
 
-def test_calc_rd():
-    # Test case 1
-    src_gts = np.array([[0, 1], [1, 0]])
-    ref_gts = np.array([[1, 0], [0, 1]])
-    tgt_gts = np.array([[1, 1], [0, 0]])
-    expected_ratio = 1 
-    result = calc_rd(ref_gts, tgt_gts, src_gts)
-    assert np.isclose(
-        result, expected_ratio
-    ), f"Failed on test case 1 with result {result}"
+    # Test invalid w values
+    with pytest.raises(
+        ValueError, match=r"Parameters w must be within the range \[0, 1\]."
+    ):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            -0.1,
+            y_list,
+            ploidy,
+            anc_allele_available,
+        )
+    with pytest.raises(
+        ValueError, match=r"Parameters w must be within the range \[0, 1\]."
+    ):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            1.1,
+            y_list,
+            ploidy,
+            anc_allele_available,
+        )
 
-    # Test case 2
-    src_gts = np.array([[0, 1], [1, 1]])
-    ref_gts = np.array([[1, 0], [0, 1]])
-    tgt_gts = np.array([[1, 0], [0, 1]])
-    expected_ratio = 1.0
-    result = calc_rd(ref_gts, tgt_gts, src_gts)
-    assert np.isclose(
-        result, expected_ratio
-    ), f"Failed on test case 2 with result {result}"
+    # Test invalid y values
+    with pytest.raises(ValueError, match="Invalid value in y_list"):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            0.5,
+            [("=", -0.1)],
+            ploidy,
+            anc_allele_available,
+        )
+    with pytest.raises(ValueError, match="Invalid value in y_list"):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            0.5,
+            [("=", 1.1)],
+            ploidy,
+            anc_allele_available,
+        )
+
+    # Test invalid operators
+    with pytest.raises(ValueError, match="Invalid operator in y_list"):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            0.5,
+            [("invalid", 0.5)],
+            ploidy,
+            anc_allele_available,
+        )
+
+    # Test mismatched src_gts_list and y_list lengths
+    with pytest.raises(
+        ValueError, match="The length of src_gts_list and y_list must match"
+    ):
+        compute_matching_loci(
+            ref_gts,
+            tgt_gts,
+            src_gts_list,
+            0.5,
+            [("=", 0.5)],
+            ploidy,
+            anc_allele_available,
+        )

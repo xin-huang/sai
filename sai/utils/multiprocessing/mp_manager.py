@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -151,7 +151,6 @@ def mp_manager(
         cleanup_on_sigterm()
 
     with Manager() as manager:
-        res = []
         in_queue, out_queue = manager.Queue(), manager.Queue()
         shared_dict = manager.dict()
         workers = [
@@ -171,13 +170,19 @@ def mp_manager(
             monitor_thread = Thread(target=monitor, args=(shared_dict, workers))
             monitor_thread.start()
 
+            results = []
+
             for i in range(len(data_generator)):
                 items = out_queue.get()
                 if items is None:
                     continue
                 if isinstance(items, tuple) and "error" in items:
                     break
-                data_processor.process_items(items)
+
+                results.extend(items)
+
+            if results:
+                data_processor.process_items(results)
 
             for w in workers:
                 w.join()

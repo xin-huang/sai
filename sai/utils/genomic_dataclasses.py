@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -44,41 +44,3 @@ class ChromosomeData:
     ALT: list[str]
     POS: list[int]
     GT: list[allel.GenotypeVector]
-
-
-@dataclass
-class GenomicSegment:
-    """
-    Represents a segment of genomic data with relevant genotype and positional information.
-
-    Parameters
-    ----------
-    chr_name : str
-        Chromosome name of the genomic segment.
-    start : int
-        Start position of the genomic segment.
-    end : int
-        End position of the genomic segment.
-    ploidy : int
-        Ploidy level for this genomic segment (e.g., 2 for diploid).
-    is_phased : bool
-        Indicates if the segment is phased.
-    ref_gts : list[allel.GenotypeVector]
-        List of genotype vectors for the reference population across the segment.
-    tgt_gts : list[allel.GenotypeVector]
-        List of genotype vectors for the target population across the segment.
-    src_gts : list[allel.GenotypeVector]
-        List of genotype vectors from the source population across the segment.
-    pos : List[int]
-        List of genomic positions within the segment.
-    """
-
-    chr_name: str
-    start: int
-    end: int
-    ploidy: int
-    is_phased: bool
-    ref_gts: list[allel.GenotypeVector]
-    tgt_gts: list[allel.GenotypeVector]
-    src_gts: list[allel.GenotypeVector]
-    pos: list[int]

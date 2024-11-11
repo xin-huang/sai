@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -18,5 +18,6 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-from .DataPreprocessor import DataPreprocessor
-from .FeatureVectorsPreprocessor import FeatureVectorsPreprocessor
+from .data_preprocessor import DataPreprocessor
+from .chunk_preprocessor import ChunkPreprocessor
+from .feature_preprocessor import FeaturePreprocessor
