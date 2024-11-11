@@ -1,0 +1,2 @@
+[report]
+omit = tests/*,setup.py,*__init__.py,*conftest.py
