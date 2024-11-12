@@ -176,7 +176,7 @@ class WindowDataGenerator(DataGenerator):
                     for src_pop in src_comb
                 ]
 
-                sub_pos = tgt_pos[(tgt_pos > start) & (tgt_pos <= end)]
+                # sub_pos = tgt_pos[(tgt_pos > start) & (tgt_pos <= end)]
 
                 yield {
                     "chr_name": self.chr_name,

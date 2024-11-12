@@ -151,7 +151,6 @@ def mp_manager(
         cleanup_on_sigterm()
 
     with Manager() as manager:
-        res = []
         in_queue, out_queue = manager.Queue(), manager.Queue()
         shared_dict = manager.dict()
         workers = [

@@ -20,7 +20,6 @@
 
 import allel
 import numpy as np
-from dataclasses import dataclass
 from typing import Optional, Union
 from sai.utils.genomic_dataclasses import ChromosomeData
 
