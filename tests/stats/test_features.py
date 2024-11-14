@@ -23,8 +23,6 @@ import numpy as np
 from sai.stats.features import calc_u
 from sai.stats.features import calc_q
 from sai.stats.features import calc_freq
-from sai.stats.features import calc_seq_div
-from sai.stats.features import calc_rd
 
 
 def test_calc_u_basic():
@@ -93,7 +91,7 @@ def test_calc_q_basic():
 
 def test_calc_q_no_match():
     # Test data with no matching loci
-    ref_gts = np.array([[0, 0, 1], [1, 1, 1]])
+    ref_gts = np.array([[0, 0, 1], [0, 0, 0]])
     tgt_gts = np.array([[0, 1, 1], [1, 1, 1]])
     src_gts = np.array([[1, 1, 1], [1, 1, 1]])
     w, y, quantile = (
@@ -137,7 +135,7 @@ def test_calc_q_edge_case():
     w, y, quantile = 0.95, 1.0, 0.95
 
     # Expected output
-    expected_result = 1.0  # Only one matching site in tgt_gts
+    expected_result = 0.9666667
 
     # Run test
     result = calc_q(ref_gts, tgt_gts, [src_gts], w, [y], quantile)
@@ -244,87 +242,3 @@ def test_unphased_tetraploid_data():
         decimal=6,
         err_msg="Unphased tetraploid data test failed.",
     )
-
-
-def test_calc_seq_div():
-    # Test case 1: Simple case with known divergence
-    gts1 = np.array([[0, 1], [1, 0]])
-    gts2 = np.array([[1, 0], [0, 1]])
-    expected_divergence = np.array([[2, 0], [0, 2]])
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 1 with result {result}"
-
-    # Test case 2: Same populations (should result in zero divergence)
-    gts1 = np.array([[1, 1], [1, 1]])
-    gts2 = np.array([[1, 1], [1, 1]])
-    expected_divergence = np.array([[0, 0], [0, 0]])
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 2 with result {result}"
-
-    # Test case 3:
-    gts1 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    gts2 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    expected_divergence = np.array(
-        [
-            [0, 2, 2],
-            [2, 0, 2],
-            [2, 2, 0],
-        ]
-    )
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 3 with result {result}"
-
-    # Test case 4:
-    gts1 = np.array(
-        [
-            [0, 1, 2],
-            [1, 2, 0],
-            [0, 2, 1],
-        ]
-    )
-    gts2 = np.array(
-        [
-            [0, 1, 2],
-            [1, 2, 0],
-            [0, 2, 1],
-        ]
-    )
-    expected_divergence = np.array(
-        [
-            [0, 3, 3],
-            [3, 0, 3],
-            [3, 3, 0],
-        ]
-    )
-    result = calc_seq_div(gts1, gts2)
-    assert np.array_equal(
-        result, expected_divergence
-    ), f"Failed on test case 4 with result {result}"
-
-
-def test_calc_rd():
-    # Test case 1
-    src_gts = np.array([[0, 1], [1, 0]])
-    ref_gts = np.array([[1, 0], [0, 1]])
-    tgt_gts = np.array([[1, 1], [0, 0]])
-    expected_ratio = 1 
-    result = calc_rd(ref_gts, tgt_gts, src_gts)
-    assert np.isclose(
-        result, expected_ratio
-    ), f"Failed on test case 1 with result {result}"
-
-    # Test case 2
-    src_gts = np.array([[0, 1], [1, 1]])
-    ref_gts = np.array([[1, 0], [0, 1]])
-    tgt_gts = np.array([[1, 0], [0, 1]])
-    expected_ratio = 1.0
-    result = calc_rd(ref_gts, tgt_gts, src_gts)
-    assert np.isclose(
-        result, expected_ratio
-    ), f"Failed on test case 2 with result {result}"

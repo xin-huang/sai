@@ -143,8 +143,13 @@ def read_geno_data(
 
     # Remove missing data if specified
     if filter_missing:
-        missing_index = chrom_data.GT.count_missing(axis=1) == len(sample_indices)
-        chrom_data = filter_geno_data(chrom_data, ~missing_index)
+        non_missing_index = chrom_data.GT.count_missing(axis=1) == 0
+        num_missing = len(non_missing_index) - np.sum(non_missing_index)
+        if num_missing != 0:
+            print(
+                f"Found {num_missing} variants with missing genotypes, removing them ..."
+            )
+        chrom_data = filter_geno_data(chrom_data, non_missing_index)
 
     # Check and incorporate ancestral alleles if the file is provided
     if anc_allele:
