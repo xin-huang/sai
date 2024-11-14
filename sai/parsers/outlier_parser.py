@@ -19,9 +19,6 @@
 
 
 import argparse
-import sys
-from sai.parsers.argument_validation import positive_int
-from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import existed_file
 from sai.parsers.argument_validation import between_zero_and_one
 from sai.sai import outlier

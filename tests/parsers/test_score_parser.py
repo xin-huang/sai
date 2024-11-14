@@ -53,8 +53,6 @@ def test_add_score_parser(parser):
             "10000",
             "--num-src",
             "2",
-            "--anc-allele-file",
-            "tests/data/test.anc.allele.bed",
             "--ploidy",
             "2",
             "--phased",
@@ -84,7 +82,6 @@ def test_add_score_parser(parser):
     assert args.win_len == 50000
     assert args.win_step == 10000
     assert args.num_src == 2
-    assert args.anc_allele_file == "tests/data/test.anc.allele.bed"
     assert args.ploidy == 2
     assert args.is_phased is True
     assert args.w == 0.3

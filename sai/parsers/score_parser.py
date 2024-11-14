@@ -19,7 +19,6 @@
 
 
 import argparse
-import sys
 from sai.parsers.argument_validation import positive_int
 from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import existed_file
@@ -53,8 +52,6 @@ def _run_score(args: argparse.Namespace) -> None:
             Step size for moving the window along the sequence.
         - num_src : int
             Number of source populations. The length of `args.y` should match `num_src`.
-        - anc_allele_file : str
-            Path to the ancestral allele file.
         - ploidy : int
             Ploidy level of the organism.
         - is_phased : bool
@@ -92,7 +89,6 @@ def _run_score(args: argparse.Namespace) -> None:
         win_len=args.win_len,
         win_step=args.win_step,
         num_src=args.num_src,
-        anc_allele_file=args.anc_allele_file,
         ploidy=args.ploidy,
         is_phased=args.is_phased,
         w=args.w,
@@ -168,13 +164,6 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         type=positive_int,
         default=1,
         help="number of source populations to include. Default is 1.",
-    )
-    parser.add_argument(
-        "--anc-allele-file",
-        dest="anc_allele_file",
-        type=existed_file,
-        default=None,
-        help="path to the file with ancestral allele information. Default is None.",
     )
     parser.add_argument(
         "--ploidy",

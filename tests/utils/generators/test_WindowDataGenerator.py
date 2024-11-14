@@ -33,7 +33,6 @@ def test_generator():
         src_ind_file="tests/data/test.src.ind.list",
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
-        anc_allele_file=None,
         ploidy=2,
         is_phased=True,
     )
@@ -86,7 +85,6 @@ def test_generator_two_sources():
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
         num_src=2,  # Set to 2 to test two-source combinations
-        anc_allele_file=None,
         ploidy=2,
         is_phased=False,
     )

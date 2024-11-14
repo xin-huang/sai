@@ -39,7 +39,6 @@ class WindowDataGenerator(DataGenerator):
         win_len: int,
         win_step: int,
         num_src: int = 1,
-        anc_allele_file: str = None,
         ploidy: int = 2,
         is_phased: bool = True,
     ):
@@ -110,7 +109,7 @@ class WindowDataGenerator(DataGenerator):
             ref_ind_file=ref_ind_file,
             tgt_ind_file=tgt_ind_file,
             src_ind_file=src_ind_file,
-            anc_allele_file=anc_allele_file,
+            anc_allele_file=None,
             is_phased=is_phased,
             filter_ref=False,
             filter_tgt=False,
@@ -176,7 +175,7 @@ class WindowDataGenerator(DataGenerator):
                     for src_pop in src_comb
                 ]
 
-                sub_pos = tgt_pos[(tgt_pos > start) & (tgt_pos <= end)]
+                # sub_pos = tgt_pos[(tgt_pos > start) & (tgt_pos <= end)]
 
                 yield {
                     "chr_name": self.chr_name,

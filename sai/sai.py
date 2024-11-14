@@ -34,7 +34,6 @@ def score(
     win_len: int,
     win_step: int,
     num_src: int,
-    anc_allele_file: str,
     ploidy: int,
     is_phased: bool,
     w: float,
@@ -65,8 +64,6 @@ def score(
         Step size in base pairs between consecutive windows.
     num_src : int
         Number of source populations to include in each windowed analysis.
-    anc_allele_file : str
-        Path to the file containing ancestral allele information.
     ploidy : int
         The ploidy level of the genome.
     is_phased : bool
@@ -93,7 +90,6 @@ def score(
         win_len=win_len,
         win_step=win_step,
         num_src=num_src,
-        anc_allele_file=anc_allele_file,
         ploidy=ploidy,
         is_phased=is_phased,
     )

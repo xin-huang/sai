@@ -118,8 +118,8 @@ def test_run_from_file(example_data, tmp_path):
         ref_ind_file=pytest.example_ref_ind_list,
         tgt_ind_file=pytest.example_tgt_ind_list,
         src_ind_file=pytest.example_src_ind_list,
-        win_len=3333,
-        win_step=3333,
+        win_len=6666,
+        win_step=6666,
     )
 
     # Create a temporary output file path using tmp_path
