@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2024 Xin Huang and Florian R. Schmidt
 #
 # GNU General Public License v3.0
 #
@@ -267,3 +267,50 @@ def calc_rd(ref_gts, tgt_gts, src_gts):
     #average_divergence_ratio = np.nanmean(divergence_ratios)
 
     #return average_divergence_ratio
+
+
+def calc_abba_baba(
+    ref_gts: np.ndarray, # p1
+    tgt_gts: np.ndarray, # p2
+    src_gts: np.ndarray, # p3
+    ploidy: int = 1,
+) -> float:
+    """
+    Calculates a D-statistic (ABBA-BABA) of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
+    across reference and multiple source genotypes.
+
+    Parameters
+    ----------
+    ref_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the reference group.
+    tgt_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    src_gts_list : list of np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    ploidy : int, optional
+        The ploidy level of the organism. Default is 1, which assumes phased data.
+
+    Returns
+    -------
+    float
+        D-statistic of the derived allele frequencies in `tgt_gts` for loci meeting the specified conditions,
+        or NaN if no loci meet the criteria.
+
+    """
+    # Calculate allele frequence for each group
+    ref_freq = calc_freq(ref_gts, ploidy)
+    tgt_freq = calc_freq(tgt_gts, ploidy)
+    src_freq = calc_freq(src_gts, ploidy)
+
+    # Calculate abba/baba vectors
+    abba_vec = (1.0 - tgt_freq) * src_freq * ref_freq
+    baba_vec = tgt_freq * (1 - src_freq) * ref_freq
+    # Calculate abba/baba sums
+    abba = np.sum(abba_vec)
+    baba = np.sum(baba_vec)
+
+    # Return D-statistic if abba/baba greater 0
+    if (abba + baba) > 0:
+        return (abba - baba) / (abba + baba)
+    else:
+        return np.nan
