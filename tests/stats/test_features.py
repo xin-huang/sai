@@ -25,7 +25,8 @@ from sai.stats.features import calc_q
 from sai.stats.features import calc_freq
 from sai.stats.features import calc_seq_div
 from sai.stats.features import calc_rd
-from sai.stats.features import calc_abba_baba
+from sai.stats.features import calc_d
+from sai.stats.features import calc_fd
 
 
 def test_calc_u_basic():
@@ -331,7 +332,7 @@ def test_calc_rd():
     ), f"Failed on test case 2 with result {result}"
 
 
-def test_calc_abba_baba_basic():
+def test_calc_d_basic():
     # Test data
     ref_gts = np.array([[0, 0, 1], [0, 0, 0], [1, 1, 1]])
     tgt_gts = np.array([[0, 1, 1], [0, 0, 1], [1, 1, 1]])
@@ -341,13 +342,13 @@ def test_calc_abba_baba_basic():
     expected_result = 1.0 
 
     # Run test
-    result = calc_abba_baba(ref_gts, tgt_gts, src_gts)
+    result = calc_d(ref_gts, tgt_gts, src_gts)
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
 
 
-def test_calc_abba_baba_no_match():
+def test_calc_d_no_match():
     # Produces invalid output
     ref_gts = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     tgt_gts = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
@@ -357,7 +358,42 @@ def test_calc_abba_baba_no_match():
     expected_result = np.nan
 
     # Run test
-    result = calc_abba_baba(ref_gts, tgt_gts, src_gts)
+    result = calc_d(ref_gts, tgt_gts, src_gts)
+    if np.isnan(expected_result):
+        assert np.isnan(result), f"Expected NaN, got {result}"
+    else:
+        assert np.isclose(
+            result, expected_result
+        ), f"Expected {expected_result}, got {result}"
+
+
+def test_calc_fd_basic():
+    # Test data
+    ref_gts = np.array([[0, 0, 1], [0, 0, 0], [1, 1, 1]])
+    tgt_gts = np.array([[0, 1, 1], [0, 0, 1], [1, 1, 1]])
+    src_gts = np.array([[1, 1, 1], [0, 1, 1], [1, 1, 1]])
+    
+    # Expected output
+    expected_result = 1.0 
+
+    # Run test
+    result = calc_fd(ref_gts, tgt_gts, src_gts)
+    assert np.isclose(
+        result, expected_result
+    ), f"Expected {expected_result}, got {result}"
+
+
+def test_calc_fd_no_match():
+    # Produces invalid output
+    ref_gts = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    tgt_gts = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    src_gts = np.array([[1, 1, 1], [0, 1, 1], [1, 1, 1]])
+    
+    # Expected output
+    expected_result = np.nan
+
+    # Run test
+    result = calc_fd(ref_gts, tgt_gts, src_gts)
     if np.isnan(expected_result):
         assert np.isnan(result), f"Expected NaN, got {result}"
     else:

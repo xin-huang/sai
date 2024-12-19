@@ -270,10 +270,54 @@ def calc_rd(ref_gts, tgt_gts, src_gts):
 
 
 def calc_abba_baba(
-    ref_gts: np.ndarray, # p1
-    tgt_gts: np.ndarray, # p2
-    src_gts: np.ndarray, # p3
+    ref_gts: np.ndarray,
+    tgt_gts: np.ndarray,
+    src_gts: np.ndarray,
     ploidy: int = 1,
+) -> tuple[float, float]:
+    """
+    Calculates a D-statistic (ABBA-BABA) of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
+    across reference and multiple source genotypes.
+
+    Parameters
+    ----------
+    ref_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the reference group.
+    tgt_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    src_gts_list : list of np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    ploidy : int, optional
+        The ploidy level of the organism. Default is 1, which assumes phased data.
+
+    Returns
+    -------
+    tuple[float, float]
+        ABBA, BABA sums of the derived allele frequencies
+
+    """
+    # Calculate allele frequence for each group
+    ref_freq = calc_freq(ref_gts, ploidy)
+    tgt_freq = calc_freq(tgt_gts, ploidy)
+    src_freq = calc_freq(src_gts, ploidy)
+
+    # Calculate abba/baba vectors
+    abba_vec = (1.0 - tgt_freq) * src_freq * ref_freq
+    baba_vec = tgt_freq * (1 - src_freq) * ref_freq
+    
+    # Calculate abba/baba sums
+    abba = np.sum(abba_vec)
+    baba = np.sum(baba_vec)
+
+    # return ABBA-BABA sums
+    return abba, baba
+    
+
+def calc_d(
+        ref_gts: np.ndarray,
+        tgt_gts: np.ndarray,
+        src_gts: np.ndarray,
+        ploidy: int = 1
 ) -> float:
     """
     Calculates a D-statistic (ABBA-BABA) of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
@@ -293,8 +337,44 @@ def calc_abba_baba(
     Returns
     -------
     float
-        D-statistic of the derived allele frequencies in `tgt_gts` for loci meeting the specified conditions,
-        or NaN if no loci meet the criteria.
+        D-statistic of the derived allele frequencies, or NaN if no loci meet the criteria.
+
+    """
+    # Calculate abba-baba sums with calc_abba_baba
+    abba, baba = calc_abba_baba(ref_gts, tgt_gts, src_gts, ploidy)    
+    
+    # Return D-statistic if abba/baba greater 0
+    if (abba + baba) > 0:
+        return (abba - baba) / (abba + baba)
+    else:
+        return np.nan
+
+
+def calc_fd(
+        ref_gts: np.ndarray,
+        tgt_gts: np.ndarray,
+        src_gts: np.ndarray,
+        ploidy: int = 1
+):
+    """
+    Calculates a fD-statistic of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
+    across reference and multiple source genotypes.
+
+    Parameters
+    ----------
+    ref_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the reference group.
+    tgt_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    src_gts_list : list of np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    ploidy : int, optional
+        The ploidy level of the organism. Default is 1, which assumes phased data.
+
+    Returns
+    -------
+    float
+        D-statistic of the derived allele frequencies, or NaN if no loci meet the criteria.
 
     """
     # Calculate allele frequence for each group
@@ -302,15 +382,29 @@ def calc_abba_baba(
     tgt_freq = calc_freq(tgt_gts, ploidy)
     src_freq = calc_freq(src_gts, ploidy)
 
-    # Calculate abba/baba vectors
-    abba_vec = (1.0 - tgt_freq) * src_freq * ref_freq
-    baba_vec = tgt_freq * (1 - src_freq) * ref_freq
-    # Calculate abba/baba sums
-    abba = np.sum(abba_vec)
-    baba = np.sum(baba_vec)
-
-    # Return D-statistic if abba/baba greater 0
-    if (abba + baba) > 0:
-        return (abba - baba) / (abba + baba)
+    # Calculate abba/baba fd vectors
+    abba_fd1_vec = (1.0 - tgt_freq) * src_freq * src_freq
+    baba_fd1_vec = tgt_freq * (1 - src_freq) * src_freq
+    abba_fd2_vec = (1.0 - tgt_freq) * ref_freq * ref_freq
+    baba_fd2_vec = tgt_freq * (1 - ref_freq) * ref_freq
+    
+    # ref and src conditions
+    fd1_condition = (src_freq > ref_freq)
+    fd2_condition = (src_freq < ref_freq)
+    
+    # Calculate fd abba/baba sums
+    abba_fd = fd1_condition * abba_fd1_vec + fd2_condition * abba_fd2_vec
+    abba_fd = np.sum(abba_fd)
+    
+    baba_fd = fd1_condition * baba_fd1_vec + fd2_condition * baba_fd2_vec
+    baba_fd = np.sum(baba_fd)
+    
+    # Return fD-statistic if abba/baba greater 0
+    if (abba_fd + baba_fd) > 0:
+        # Calculate normal abba, baba sum values from calc_abba_baba
+        abba, baba = calc_abba_baba(ref_gts, tgt_gts, src_gts, ploidy)
+        
+        return (abba - baba) / (abba_fd + baba_fd)
     else:
         return np.nan
+    
