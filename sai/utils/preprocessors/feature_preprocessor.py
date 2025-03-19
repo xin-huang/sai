@@ -136,7 +136,7 @@ class FeaturePreprocessor(DataPreprocessor):
             or (src_gts_list is None)
             or (ploidy is None)
         ):
-            items["statistic"] = "NA"
+            items["statistic"] = np.nan
             items["candidates"] = np.array([])
         elif self.stat_type == "U":
             items["statistic"], items["candidates"] = calc_u(

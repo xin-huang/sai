@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -97,55 +97,49 @@ def test_outlier(example_data):
         num_workers=1,
     )
 
-    # Define output files for U and Q outliers
-    u_outliers_file = example_data["output_dir"] / "U_outliers.tsv"
-    q_outliers_file = example_data["output_dir"] / "Q_outliers.tsv"
+    outliers_file = example_data["output_dir"] / "outliers.tsv"
 
-    # Run the outlier function for U
-    outlier(
-        score_file=str(example_data["output_file"]),
-        output=str(u_outliers_file),
-        quantile=0.95,
-    )
+    # Run the outlier function
+    with pytest.warns(UserWarning, match="only one unique value"):
+        outlier(
+            score_file=str(example_data["output_file"]),
+            output=str(outliers_file),
+            quantile=0.95,
+        )
 
-    # Run the outlier function for Q
+    assert outliers_file.exists()
+
+    q_outliers_file = example_data["output_dir"] / "q_outliers.tsv"
+
     outlier(
-        score_file=str(example_data["output_file"]),
+        score_file="tests/data/test.Q.scores",
         output=str(q_outliers_file),
-        quantile=0.95,
+        quantile=0.25,
     )
 
-    # Check if the outlier files are created
-    assert u_outliers_file.exists()
-    assert q_outliers_file.exists()
+    df = pd.read_csv(str(q_outliers_file), sep="\t")
+    assert df["Q95"].iloc[0] == 0.7
 
-    # Optionally, read and check contents of the outlier files
-    u_outliers_df = pd.read_csv(u_outliers_file, sep="\t")
-    q_outliers_df = pd.read_csv(q_outliers_file, sep="\t")
+    outlier(
+        score_file="tests/data/test.Q.scores",
+        output=str(q_outliers_file),
+        quantile=0.75,
+    )
 
-    assert u_outliers_df.empty, "U outliers file is unexpectedly not empty"
-    assert q_outliers_df.empty, "Q outliers file is unexpectedly not empty"
-
-
-@pytest.fixture
-def sample_outlier_file():
-    """Create a temporary outlier file to simulate input data."""
-    with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".tsv") as tmpfile:
-        tmpfile.write("A\tB\tC\tD\tE\tF\tG\tH\tI\n")  # Example column names
-        tmpfile.write("1\t2\t3\t4\t5\t6\t7\t0.1\t0.2\n")  # Example data
-        tmpfile.write("2\t3\t4\t5\t6\t7\t8\t0.3\t0.4\n")
-        tmpfile.write("3\t4\t5\t6\t7\t8\t9\t0.5\t0.6\n")
-        return tmpfile.name
+    df = pd.read_csv(str(q_outliers_file), sep="\t")
+    assert df["Q95"].iloc[0] == 1.0
+    assert df["Q95"].iloc[1] == 1.0
 
 
-def test_plot(sample_outlier_file):
+def test_plot():
     """Test if the plot function correctly generates an output file."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_output:
         output_file = tmp_output.name
 
     # Call the plot function
     plot(
-        outlier_file=sample_outlier_file,
+        u_outlier_file="tests/data/test.u.outliers.tsv",
+        q_outlier_file="tests/data/test.q.outliers.tsv",
         output=output_file,
         xlabel="Q Values",
         ylabel="U Values",
@@ -156,5 +150,4 @@ def test_plot(sample_outlier_file):
     assert os.path.exists(output_file), "Plot output file was not created."
 
     # Clean up temporary files
-    os.remove(sample_outlier_file)
     os.remove(output_file)

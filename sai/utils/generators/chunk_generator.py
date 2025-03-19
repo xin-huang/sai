@@ -140,7 +140,7 @@ class ChunkGenerator(DataGenerator):
                 min_start = sub[0][0]
                 max_end = sub[-1][1]
                 if (prev_end is not None) and (min_start < prev_end):
-                    min_start = prev_end
+                    min_start = prev_end + 1
                 result.append((min_start, max_end))
                 prev_end = max_end
             start_idx = end_idx

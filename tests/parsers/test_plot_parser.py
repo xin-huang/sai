@@ -37,8 +37,10 @@ def test_add_plot_parser(parser):
     args = parser.parse_args(
         [
             "plot",
-            "--outlier",
-            "tests/data/test.outliers.tsv",
+            "--u-outlier",
+            "tests/data/test.u.outliers.tsv",
+            "--q-outlier",
+            "tests/data/test.q.outliers.tsv",
             "--output",
             "output.png",
             "--xlabel",
@@ -59,7 +61,8 @@ def test_add_plot_parser(parser):
     )
 
     # Check if the attributes are set correctly
-    assert args.outlier == "tests/data/test.outliers.tsv"
+    assert args.u_outlier == "tests/data/test.u.outliers.tsv"
+    assert args.q_outlier == "tests/data/test.q.outliers.tsv"
     assert args.output == "output.png"
     assert args.xlabel == "Test X Label"
     assert args.ylabel == "Test Y Label"
