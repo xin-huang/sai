@@ -266,9 +266,10 @@ def calc_q(
 
     Returns
     -------
-    float
-        The specified quantile of the derived allele frequencies in `tgt_gts` for loci meeting the specified conditions,
-        or NaN if no loci meet the criteria.
+    tuple[float, np.ndarray]
+        - The specified quantile of the derived allele frequencies in `tgt_gts` for loci meeting the specified conditions,
+          or NaN if no loci meet the criteria.
+        - A 1D numpy array containing the genomic positions of the loci that meet the conditions.
 
     Raises
     ------
@@ -297,5 +298,8 @@ def calc_q(
     if filtered_tgt_freq.size == 0:
         return np.nan, np.array([])
 
+    threshold = np.nanquantile(filtered_tgt_freq, quantile)
+    loci_positions = filtered_positions[filtered_tgt_freq >= threshold]
+
     # Calculate and return the specified quantile of the filtered `tgt_gts` frequencies
-    return np.quantile(filtered_tgt_freq, quantile), filtered_positions
+    return threshold, loci_positions

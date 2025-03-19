@@ -135,7 +135,11 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
     """
     # Read the input data file
     data = pd.read_csv(
-        score_file, sep="\t", dtype={"Candidate Position": str}, index_col=False
+        score_file,
+        sep="\t",
+        na_values=["nan"],
+        dtype={"Candidate": str},
+        index_col=False,
     )
 
     column = data.columns[-2]
@@ -146,8 +150,8 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
     # Calculate quantile threshold for the chosen column
     threshold = data[column].quantile(quantile)
 
-    # Filter rows where values exceed the quantile threshold
-    outliers = data[data[column] > threshold]
+    # Filter rows where values exceed or equal to the quantile threshold
+    outliers = data[data[column] >= threshold]
 
     # Sort the filtered data by 'Chrom', 'Start', 'End' columns
     if not outliers.empty:

@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -118,13 +118,6 @@ def test_outlier(example_data):
     # Check if the outlier files are created
     assert u_outliers_file.exists()
     assert q_outliers_file.exists()
-
-    # Optionally, read and check contents of the outlier files
-    u_outliers_df = pd.read_csv(u_outliers_file, sep="\t")
-    q_outliers_df = pd.read_csv(q_outliers_file, sep="\t")
-
-    assert u_outliers_df.empty, "U outliers file is unexpectedly not empty"
-    assert q_outliers_df.empty, "Q outliers file is unexpectedly not empty"
 
 
 @pytest.fixture
