@@ -79,6 +79,23 @@ def test_run(feature_preprocessor):
     assert "statistic" in result[0]
     assert "candidates" in result[0]
 
+    result = feature_preprocessor.run(
+        chr_name=chr_name,
+        ref_pop=ref_pop,
+        tgt_pop=tgt_pop,
+        src_pop_list=src_pop_list,
+        start=start,
+        end=end,
+        pos=pos,
+        ref_gts=None,
+        tgt_gts=None,
+        src_gts_list=None,
+        ploidy=None,
+    )
+
+    assert np.isnan(result[0]["statistic"])
+    assert result[0]["candidates"].size == 0
+
 
 def test_process_items(feature_preprocessor, tmp_path):
     # Generate a temporary output file path using tmp_path
