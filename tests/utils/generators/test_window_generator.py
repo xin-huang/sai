@@ -19,13 +19,13 @@
 
 
 import pytest
-from sai.utils.generators import WindowDataGenerator
+from sai.utils.generators import WindowGenerator
 
 
 @pytest.fixture
 def test_generator():
-    # Initialize the WindowDataGenerator with actual data files
-    generator = WindowDataGenerator(
+    # Initialize the WindowGenerator with actual data files
+    generator = WindowGenerator(
         vcf_file="tests/data/test.data.vcf",
         chr_name="21",
         ref_ind_file="tests/data/test.ref.ind.list",
@@ -33,9 +33,6 @@ def test_generator():
         src_ind_file="tests/data/test.src.ind.list",
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
-        anc_allele_file=None,
-        ploidy=2,
-        is_phased=True,
     )
     return generator
 
@@ -44,15 +41,14 @@ def test_initialization(test_generator):
     # Verify initialization parameters
     assert test_generator.win_len == 1000
     assert test_generator.win_step == 500
-    assert test_generator.ploidy == 1
 
 
-def test_window_data_generator(test_generator):
+def test_window_generator(test_generator):
     # Collect data from generator
     data_list = list(test_generator.get())
 
     # Ensure windows were generated
-    assert len(data_list) == 376
+    assert len(data_list) == 380
 
     # Inspect first window's contents for expected format and data
     first_window = data_list[0]
@@ -69,15 +65,29 @@ def test_window_data_generator(test_generator):
     assert "ploidy" in first_window
 
 
+def test_none_window_generator(test_generator):
+    test_generator.ref_data = None
+
+    data_list = list(test_generator.get())
+    assert len(data_list) == 380
+
+    first_window = data_list[0]
+    assert first_window["ref_gts"] is None
+    assert first_window["tgt_gts"] is None
+    assert first_window["src_gts_list"] is None
+    assert first_window["ploidy"] is None
+    assert len(first_window["pos"]) == 0
+
+
 def test_len(test_generator):
     # Check if __len__ provides a reasonable window count
-    assert len(test_generator) == 376
+    assert len(test_generator) == 380
 
 
 @pytest.fixture
 def test_generator_two_sources():
-    # Initialize the WindowDataGenerator with num_src=2 for testing two-source combinations
-    generator = WindowDataGenerator(
+    # Initialize the WindowGenerator with num_src=2 for testing two-source combinations
+    generator = WindowGenerator(
         vcf_file="tests/data/test.data.vcf",
         chr_name="21",
         ref_ind_file="tests/data/test.ref.ind.list",
@@ -86,9 +96,6 @@ def test_generator_two_sources():
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
         num_src=2,  # Set to 2 to test two-source combinations
-        anc_allele_file=None,
-        ploidy=2,
-        is_phased=False,
     )
     return generator
 
@@ -101,7 +108,7 @@ def test_initialization_two_sources(test_generator_two_sources):
     assert test_generator_two_sources.num_src == 2
 
 
-def test_window_data_generator_with_two_sources(test_generator_two_sources):
+def test_window_generator_with_two_sources(test_generator_two_sources):
     # Collect data from generator with two sources
     data_list = list(test_generator_two_sources.get())
 

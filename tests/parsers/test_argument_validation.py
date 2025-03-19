@@ -20,7 +20,6 @@
 
 import argparse
 import pytest
-import os
 from sai.parsers.argument_validation import positive_int
 from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import between_zero_and_one

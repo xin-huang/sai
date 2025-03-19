@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -18,5 +18,6 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-from .DataGenerator import DataGenerator
-from .WindowDataGenerator import WindowDataGenerator
+from .data_generator import DataGenerator
+from .chunk_generator import ChunkGenerator
+from .window_generator import WindowGenerator

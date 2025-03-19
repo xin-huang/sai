@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -21,7 +21,7 @@
 import numpy as np
 
 
-def calc_freq(gts, ploidy=1):
+def calc_freq(gts: np.ndarray, ploidy: int = 1) -> np.ndarray:
     """
     Calculates allele frequencies, supporting both phased and unphased data.
 
@@ -45,18 +45,17 @@ def calc_freq(gts, ploidy=1):
         return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
 
 
-def calc_u(
+def compute_matching_loci(
     ref_gts: np.ndarray,
     tgt_gts: np.ndarray,
     src_gts_list: list[np.ndarray],
     w: float,
-    x: float,
-    y_list: list[float],
-    ploidy: int = 1,
-) -> int:
+    y_list: list[tuple[str, float]],
+    ploidy: int,
+    anc_allele_available: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Calculates the count of genetic loci that meet specified allele frequency conditions
-    across reference, target, and multiple source genotypes.
+    Computes loci that meet specified allele frequency conditions across reference, target, and source genotypes.
 
     Parameters
     ----------
@@ -70,62 +69,97 @@ def calc_u(
     w : float
         Threshold for the allele frequency in `ref_gts`. Only loci with frequencies less than `w` are counted.
         Must be within the range [0, 1].
-    x : float
-        Threshold for the allele frequency in `tgt_gts`. Only loci with frequencies greater than `x` are counted.
-        Must be within the range [0, 1].
-    y_list : list of float
-        List of exact allele frequency thresholds for each source population in `src_gts_list`.
-        Must be within the range [0, 1] and have the same length as `src_gts_list`.
-    ploidy : int, optional
-        The ploidy level of the organism. Default is 1, which assumes phased data.
+    y_list : list of tuple[str, float]
+        List of allele frequency conditions for each source population in `src_gts_list`.
+        Each entry is a tuple (operator, threshold), where:
+        - `operator` can be '=', '<', '>', '<=', '>='
+        - `threshold` is a float within [0, 1]
+        The length must match `src_gts_list`.
+    ploidy : int
+        The ploidy level of the organism.
+    anc_allele_available : bool
+        If True, checks only for matches with `y` (assuming `1` represents the derived allele).
+        If False, checks both matches with `y` and `1 - y`, taking the dominant allele in the source as the reference.
 
     Returns
     -------
-    int
-        The count of loci that meet all specified frequency conditions.
-
-    Raises
-    ------
-    ValueError
-        If `w`, `x`, or any value in `y_list` is outside the range [0, 1], or if `y_list` length does not match `src_gts_list`.
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        - Adjusted reference allele frequencies (`ref_freq`).
+        - Adjusted target allele frequencies (`tgt_freq`).
+        - Boolean array indicating loci that meet the specified frequency conditions (`condition`).
     """
     # Validate input parameters
-    if not (0 <= w <= 1 and 0 <= x <= 1):
-        raise ValueError("Parameters w and x must be within the range [0, 1].")
-    if not all(0 <= y <= 1 for y in y_list):
-        raise ValueError("All values in y_list must be within the range [0, 1].")
+    if not (0 <= w <= 1):
+        raise ValueError("Parameters w must be within the range [0, 1].")
+
+    for op, y in y_list:
+        if not (0 <= y <= 1):
+            raise ValueError(f"Invalid value in y_list: {y}. within the range [0, 1].")
+        if op not in ("=", "<", ">", "<=", ">="):
+            raise ValueError(
+                f"Invalid operator in y_list: {op}. Must be '=', '<', '>', '<=', or '>='."
+            )
+
     if len(src_gts_list) != len(y_list):
         raise ValueError("The length of src_gts_list and y_list must match.")
 
-    # Calculate allele frequencies for each group
+    # Compute allele frequencies
     ref_freq = calc_freq(ref_gts, ploidy)
     tgt_freq = calc_freq(tgt_gts, ploidy)
     src_freq_list = [calc_freq(src_gts, ploidy) for src_gts in src_gts_list]
 
-    # Set initial condition for reference and target populations
-    condition = (ref_freq < w) & (tgt_freq > x)
+    # Check match for each `y`
+    op_funcs = {
+        "=": lambda src_freq, y: src_freq == y,
+        "<": lambda src_freq, y: src_freq < y,
+        ">": lambda src_freq, y: src_freq > y,
+        "<=": lambda src_freq, y: src_freq <= y,
+        ">=": lambda src_freq, y: src_freq >= y,
+    }
 
-    # Add conditions for each source population
-    for src_freq, y in zip(src_freq_list, y_list):
-        condition &= src_freq == y
+    match_conditions = [
+        op_funcs[op](src_freq, y) for src_freq, (op, y) in zip(src_freq_list, y_list)
+    ]
+    all_match_y = np.all(match_conditions, axis=0)
 
-    # Count loci meeting all specified conditions
-    count = np.sum(condition)
-    return count
+    if not anc_allele_available:
+        # Check if all source populations match `1 - y`
+        match_conditions_1_minus_y = [
+            op_funcs[op](src_freq, 1 - y)
+            for src_freq, (op, y) in zip(src_freq_list, y_list)
+        ]
+        all_match_1_minus_y = np.all(match_conditions_1_minus_y, axis=0)
+        all_match = all_match_y | all_match_1_minus_y
+
+        # Identify loci where all sources match `1 - y` for frequency inversion
+        inverted = all_match_1_minus_y
+
+        # Invert frequencies for these loci
+        ref_freq[inverted] = 1 - ref_freq[inverted]
+        tgt_freq[inverted] = 1 - tgt_freq[inverted]
+    else:
+        all_match = all_match_y
+
+    # Final condition: locus must satisfy source matching and have `ref_freq < w`
+    condition = all_match & (ref_freq < w)
+
+    return ref_freq, tgt_freq, condition
 
 
-def calc_q(
+def calc_u(
     ref_gts: np.ndarray,
     tgt_gts: np.ndarray,
     src_gts_list: list[np.ndarray],
+    pos: np.ndarray,
     w: float,
+    x: float,
     y_list: list[float],
-    quantile: float = 0.95,
     ploidy: int = 1,
-) -> float:
+    anc_allele_available: bool = False,
+) -> tuple[int, np.ndarray]:
     """
-    Calculates a specified quantile of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
-    across reference and multiple source genotypes.
+    Calculates the count of genetic loci that meet specified allele frequency conditions
+    across reference, target, and multiple source genotypes, with adjustments based on src_freq consistency.
 
     Parameters
     ----------
@@ -136,6 +170,85 @@ def calc_q(
     src_gts_list : list of np.ndarray
         A list of 2D numpy arrays for each source population, where each row represents a locus and each column
         represents an individual in that source population.
+    pos : np.ndarray
+        A 1D numpy array where each element represents the genomic position.
+    w : float
+        Threshold for the allele frequency in `ref_gts`. Only loci with frequencies less than `w` are counted.
+        Must be within the range [0, 1].
+    x : float
+        Threshold for the allele frequency in `tgt_gts`. Only loci with frequencies greater than `x` are counted.
+        Must be within the range [0, 1].
+    y_list : list of float
+        List of exact allele frequency thresholds for each source population in `src_gts_list`.
+        Must be within the range [0, 1] and have the same length as `src_gts_list`.
+    ploidy : int, optional
+        The ploidy level of the organism. Default is 1, which assumes phased data.
+    anc_allele_available : bool
+        If True, checks only for matches with `y` (assuming `1` represents the derived allele).
+        If False, checks both matches with `y` and `1 - y`, taking the major allele in the source as the reference.
+
+    Returns
+    -------
+    tuple[int, np.ndarray]
+        - The count of loci that meet all specified frequency conditions.
+        - A 1D numpy array containing the genomic positions of the loci that meet the conditions.
+
+    Raises
+    ------
+    ValueError
+        If `x` is outside the range [0, 1].
+    """
+    # Validate input parameters
+    if not (0 <= x <= 1):
+        raise ValueError("Parameter x must be within the range [0, 1].")
+
+    ref_freq, tgt_freq, condition = compute_matching_loci(
+        ref_gts,
+        tgt_gts,
+        src_gts_list,
+        w,
+        y_list,
+        ploidy,
+        anc_allele_available,
+    )
+
+    # Apply final conditions
+    condition &= tgt_freq > x
+
+    loci_indices = np.where(condition)[0]
+    loci_positions = pos[loci_indices]
+    count = loci_indices.size
+
+    # Return count of matching loci
+    return count, loci_positions
+
+
+def calc_q(
+    ref_gts: np.ndarray,
+    tgt_gts: np.ndarray,
+    src_gts_list: list[np.ndarray],
+    pos: np.ndarray,
+    w: float,
+    y_list: list[float],
+    quantile: float = 0.95,
+    ploidy: int = 1,
+    anc_allele_available: bool = False,
+) -> float:
+    """
+    Calculates a specified quantile of derived allele frequencies in `tgt_gts` for loci that meet specific conditions
+    across reference and multiple source genotypes, with adjustments based on src_freq consistency.
+
+    Parameters
+    ----------
+    ref_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the reference group.
+    tgt_gts : np.ndarray
+        A 2D numpy array where each row represents a locus and each column represents an individual in the target group.
+    src_gts_list : list of np.ndarray
+        A list of 2D numpy arrays for each source population, where each row represents a locus and each column
+        represents an individual in that source population.
+    pos: np.ndarray
+        A 1D numpy array where each element represents the genomic position.
     w : float
         Frequency threshold for the derived allele in `ref_gts`. Only loci with frequencies lower than `w` are included.
         Must be within the range [0, 1].
@@ -147,6 +260,9 @@ def calc_q(
         Default is 0.95 (95% quantile).
     ploidy : int, optional
         The ploidy level of the organism. Default is 1, which assumes phased data.
+    anc_allele_available : bool
+        If True, checks only for matches with `y` (assuming `1` represents the derived allele).
+        If False, checks both matches with `y` and `1 - y`, taking the major allele in the source as the reference.
 
     Returns
     -------
@@ -157,113 +273,29 @@ def calc_q(
     Raises
     ------
     ValueError
-        If `w`, `quantile`, or any value in `y_list` is outside the range [0, 1], or if `y_list` length does not match `src_gts_list`.
+        If `quantile` is outside the range [0, 1].
     """
     # Validate input parameters
-    if not (0 <= w <= 1 and 0 <= quantile <= 1):
-        raise ValueError("Parameters w and quantile must be within the range [0, 1].")
-    if not all(0 <= y <= 1 for y in y_list):
-        raise ValueError("All values in y_list must be within the range [0, 1].")
-    if len(src_gts_list) != len(y_list):
-        raise ValueError("The length of src_gts_list and y_list must match.")
+    if not (0 <= quantile <= 1):
+        raise ValueError("Parameter quantile must be within the range [0, 1].")
 
-    # Calculate allele frequencies for each group
-    ref_freq = calc_freq(ref_gts, ploidy)
-    tgt_freq = calc_freq(tgt_gts, ploidy)
-    src_freq_list = [calc_freq(src_gts, ploidy) for src_gts in src_gts_list]
-
-    # Set initial condition for reference population
-    condition = ref_freq < w
-
-    # Add conditions for each source population
-    for src_freq, y in zip(src_freq_list, y_list):
-        condition &= src_freq == y
+    ref_freq, tgt_freq, condition = compute_matching_loci(
+        ref_gts,
+        tgt_gts,
+        src_gts_list,
+        w,
+        y_list,
+        ploidy,
+        anc_allele_available,
+    )
 
     # Filter `tgt_gts` frequencies based on the combined condition
     filtered_tgt_freq = tgt_freq[condition]
+    filtered_positions = pos[condition]
 
     # Return NaN if no loci meet the criteria
     if filtered_tgt_freq.size == 0:
-        return np.nan
+        return np.nan, np.array([])
 
     # Calculate and return the specified quantile of the filtered `tgt_gts` frequencies
-    return np.quantile(filtered_tgt_freq, quantile)
-
-
-def calc_seq_div(gts1, gts2):
-    """
-    Calculates pairwise sequence divergence between two populations using the Hamming distance
-    that supports multiallelic data (e.g., values other than 0 and 1).
-
-    Parameters
-    ----------
-    gts1 : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual in the first population.
-    gts2 : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual in the second population.
-
-    Returns
-    -------
-    float
-        The average sequence divergence between the two populations.
-    """
-    # Expand dimensions to broadcast `gts1` and `gts2` across each other's individuals
-    expanded_gts1 = gts1[:, :, np.newaxis]  # Shape: (loci, individuals_gts1, 1)
-    expanded_gts2 = gts2[:, np.newaxis, :]  # Shape: (loci, 1, individuals_gts2)
-
-    # Calculate divergence for each pair by comparing values directly
-    div_matrix = expanded_gts1 != expanded_gts2  # True where values differ
-
-    # Average divergence across loci and individuals
-    pairwise_divergence = np.sum(
-        div_matrix, axis=0
-    )  # Shape: (individuals_gts1, individuals_gts2)
-
-    return pairwise_divergence
-
-
-def calc_rd(ref_gts, tgt_gts, src_gts):
-    """
-    Calculates the average ratio of the sequence divergence between an individual from the source population
-    and an individual from the admixed population, and the sequence divergence between an individual from the
-    source population and an individual from the non-admixed population.
-
-    Parameters
-    ----------
-    ref_gts : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual in the non-admixed population.
-    tgt_gts : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual in the admixed population.
-    src_gts : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual in the source population.
-
-    Returns
-    -------
-    float
-        The average divergence ratio.
-    """
-    # Step 1: Calculate sequence divergence between source and non-admixed population
-    divergence_src_ref = calc_seq_div(src_gts, ref_gts)
-
-    # Step 2: Calculate sequence divergence between source and admixed population
-    divergence_src_tgt = calc_seq_div(src_gts, tgt_gts)
-
-    if np.mean(divergence_src_ref) != 0:
-        return np.mean(divergence_src_tgt) / np.mean(divergence_src_ref)
-    else:
-        return np.nan
-
-    # Step 3: Replace zeros in divergence_src_ref with -1 to handle division by zero
-    #divergence_src_ref_safe = np.where(
-    #    divergence_src_ref == 0, np.nan, divergence_src_ref
-    #)
-
-    # Step 4: Calculate the pairwise ratios
-    #divergence_ratios = (
-    #    divergence_src_tgt[:, :, np.newaxis] / divergence_src_ref_safe[:, np.newaxis, :]
-    #)
-
-    # Step 5: Calculate the mean of the pairwise ratios
-    #average_divergence_ratio = np.nanmean(divergence_ratios)
-
-    #return average_divergence_ratio
+    return np.quantile(filtered_tgt_freq, quantile), filtered_positions

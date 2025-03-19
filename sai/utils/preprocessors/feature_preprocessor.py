@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -20,11 +20,11 @@
 
 import numpy as np
 from typing import Any
-from sai.stats.features import calc_rd, calc_u, calc_q
+from sai.stats.features import calc_u, calc_q
 from sai.utils.preprocessors import DataPreprocessor
 
 
-class FeatureVectorsPreprocessor(DataPreprocessor):
+class FeaturePreprocessor(DataPreprocessor):
     """
     A preprocessor subclass for generating feature vectors from genomic data.
 
@@ -39,7 +39,8 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
         x: float,
         y: list[float],
         output_file: str,
-        quantile: float = 0.95,
+        stat_type: str,
+        anc_allele_available: bool = False,
     ):
         """
         Initializes FeatureVectorsPreprocessor with specific frequency thresholds
@@ -55,12 +56,22 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
             List of frequency thresholds for `calc_u` and `calc_q`.
         output_file : str
             Path to the output file to save processed feature vectors.
+        stat_type: str,
+            Specifies the type of statistic to compute.
+            - "U" : Compute the U statistic using `calc_u()`.
+            - "QXX" (e.g., "Q95", "Q50") : Compute the Q statistic using `calc_q()`,
+            where "XX" represents the quantile in percentage (e.g., "Q95" → quantile=0.95).
+        anc_allele_available: bool, optional
+            If True, ancestral allele information is available.
+            If False, ancestral allele information is unavailable.
+            Default is False.
         """
         self.w = w
         self.x = x
         self.y = y
-        self.quantile = quantile
         self.output_file = output_file
+        self.stat_type = stat_type
+        self.anc_allele_available = anc_allele_available
 
     def run(
         self,
@@ -70,11 +81,12 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
         src_pop_list: list[str],
         start: int,
         end: int,
+        pos: np.ndarray,
         ref_gts: np.ndarray,
         tgt_gts: np.ndarray,
         src_gts_list: list[np.ndarray],
         ploidy: int,
-    ) -> dict[str, Any]:
+    ) -> list[dict[str, Any]]:
         """
         Generates feature vectors for a specified genomic window.
 
@@ -92,6 +104,8 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
             Start position of the genomic window.
         end : int
             End position of the genomic window.
+        pos : np.ndarray
+            A 1D numpy array where each element represents the genomic position.
         ref_gts : np.ndarray
             Genotype data for the reference population.
         tgt_gts : np.ndarray
@@ -103,8 +117,8 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
 
         Returns
         -------
-        dict[str, Any]
-            A dictionary containing calculated feature vectors for the genomic window.
+        list[dict[str, Any]]
+            A list containing a dictionary of calculated feature vectors for the genomic window.
         """
         items = {
             "chr_name": chr_name,
@@ -113,33 +127,56 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
             "ref_pop": ref_pop,
             "tgt_pop": tgt_pop,
             "src_pop_list": src_pop_list,
+            "nsnps": len(pos),
         }
 
-        # Calculate u statistic based on the provided w, x, and y
-        items["u_statistic"] = calc_u(
-            ref_gts=ref_gts,
-            tgt_gts=tgt_gts,
-            src_gts_list=src_gts_list,
-            w=self.w,
-            x=self.x,
-            y_list=self.y,
-            ploidy=ploidy,
-        )
+        if (
+            (ref_gts is None)
+            or (tgt_gts is None)
+            or (src_gts_list is None)
+            or (ploidy is None)
+        ):
+            items["statistic"] = "NA"
+            items["candidates"] = np.array([])
+        elif self.stat_type == "U":
+            items["statistic"], items["candidates"] = calc_u(
+                ref_gts=ref_gts,
+                tgt_gts=tgt_gts,
+                src_gts_list=src_gts_list,
+                pos=pos,
+                w=self.w,
+                x=self.x,
+                y_list=self.y,
+                ploidy=ploidy,
+                anc_allele_available=self.anc_allele_available,
+            )
+        elif self.stat_type.startswith("Q"):
+            try:
+                quantile_value = int(self.stat_type[1:]) / 100
+            except ValueError:
+                raise ValueError(
+                    f"Invalid stat_type format: {self.stat_type}. Expected format 'QXX', e.g., 'Q95'."
+                )
 
-        # Calculate q statistic based on the provided w and y for each source population
-        items["q_statistic"] = calc_q(
-            ref_gts=ref_gts,
-            tgt_gts=tgt_gts,
-            src_gts_list=src_gts_list,
-            w=self.w,
-            y_list=self.y,
-            quantile=self.quantile,
-            ploidy=ploidy,
-        )
+            items["statistic"], items["candidates"] = calc_q(
+                ref_gts=ref_gts,
+                tgt_gts=tgt_gts,
+                src_gts_list=src_gts_list,
+                pos=pos,
+                w=self.w,
+                y_list=self.y,
+                quantile=quantile_value,
+                ploidy=ploidy,
+                anc_allele_available=self.anc_allele_available,
+            )
+        else:
+            raise ValueError(
+                f"Invalid stat_type: {self.stat_type}. Must be 'U' or 'QXX' (e.g., 'Q95')."
+            )
 
-        return items
+        return [items]
 
-    def process_items(self, items: dict[str, Any]) -> None:
+    def process_items(self, items: list[dict[str, Any]]) -> None:
         """
         Processes and writes a single dictionary of feature vectors to the output file.
 
@@ -151,10 +188,22 @@ class FeatureVectorsPreprocessor(DataPreprocessor):
         with open(
             self.output_file, "a"
         ) as f:  # Open in append mode for continuous writing
-            src_pop_str = ",".join(items["src_pop_list"])
-            line = (
-                f"{items['chr_name']}\t{items['start']}\t{items['end']}\t"
-                f"{items['ref_pop']}\t{items['tgt_pop']}\t{src_pop_str}\t"
-                f"{items['u_statistic']}\t{items['q_statistic']}\n"
-            )
-            f.write(line)
+            lines = []
+            for item in items:
+                src_pop_str = ",".join(item["src_pop_list"])
+                candidates = (
+                    "NA"
+                    if item["candidates"].size == 0
+                    else ",".join(
+                        f"{item['chr_name']}:{pos}" for pos in item["candidates"]
+                    )
+                )
+
+                line = (
+                    f"{item['chr_name']}\t{item['start']}\t{item['end']}\t"
+                    f"{item['ref_pop']}\t{item['tgt_pop']}\t{src_pop_str}\t"
+                    f"{item['nsnps']}\t{item['statistic']}\t{candidates}\n"
+                )
+                lines.append(line)
+
+            f.writelines(lines)

@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -20,6 +20,7 @@
 
 import argparse
 import os
+import re
 
 
 def positive_int(value: str) -> int:
@@ -138,3 +139,35 @@ def existed_file(value: str) -> str:
         if not os.path.isfile(value):
             raise argparse.ArgumentTypeError(f"{value} is not found")
     return value
+
+
+def validate_stat_type(value: str) -> str:
+    """
+    Validate the input `stat_type`.
+
+    Parameters
+    ----------
+    value : str
+        The statistic type to validate. Must be either:
+        - "U" : Compute the U statistic.
+        - "QXX" : Compute the Q statistic, where "XX" is a one or two-digit integer
+          representing the quantile percentage (e.g., "Q95" for 95th quantile).
+
+    Returns
+    -------
+    str
+        The validated `stat_type`, either "U" or "QXX".
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the input does not match the expected format ("U" or "QXX").
+    """
+    if value == "U":
+        return value
+    elif re.fullmatch(r"Q\d{1,2}", value):  # Matches Q + one or two digits
+        return value
+    else:
+        raise argparse.ArgumentTypeError(
+            f"Invalid --stat-type: {value}. Must be 'U' or 'QXX' (e.g., 'Q95' for quantile=0.95)."
+        )

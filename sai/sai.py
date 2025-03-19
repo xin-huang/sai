@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -20,9 +20,10 @@
 
 import os
 import pandas as pd
-from sai.utils.multiprocessing import mp_manager
-from sai.utils.generators import WindowDataGenerator
-from sai.utils.preprocessors import FeatureVectorsPreprocessor
+import matplotlib.pyplot as plt
+from natsort import natsorted
+from sai.utils.generators import ChunkGenerator
+from sai.utils.preprocessors import ChunkPreprocessor
 
 
 def score(
@@ -35,13 +36,11 @@ def score(
     win_step: int,
     num_src: int,
     anc_allele_file: str,
-    ploidy: int,
-    is_phased: bool,
     w: float,
     x: float,
     y: list[float],
     output_file: str,
-    quantile: float,
+    stat_type: str,
     num_workers: int,
 ) -> None:
     """
@@ -67,10 +66,6 @@ def score(
         Number of source populations to include in each windowed analysis.
     anc_allele_file : str
         Path to the file containing ancestral allele information.
-    ploidy : int
-        The ploidy level of the genome.
-    is_phased : bool
-        Indicates if genotype data is phased.
     w : float
         Frequency threshold for calculating feature vectors.
     x : float
@@ -79,34 +74,36 @@ def score(
         List of frequency thresholds used for various calculations in feature vector processing.
     output_file : str
         File path to save the output of processed feature vectors.
-    quantile : float
-        Quantile threshold for feature vector processing.
+    stat_type: str
+        Specifies the type of statistic to compute.
     num_workers : int
         Number of parallel processes for multiprocessing.
     """
-    generator = WindowDataGenerator(
+    generator = ChunkGenerator(
         vcf_file=vcf_file,
         chr_name=chr_name,
+        window_size=win_len,
+        step_size=win_step,
+        num_chunks=num_workers * 8,
+    )
+
+    preprocessor = ChunkPreprocessor(
+        vcf_file=vcf_file,
         ref_ind_file=ref_ind_file,
         tgt_ind_file=tgt_ind_file,
         src_ind_file=src_ind_file,
         win_len=win_len,
         win_step=win_step,
-        num_src=num_src,
-        anc_allele_file=anc_allele_file,
-        ploidy=ploidy,
-        is_phased=is_phased,
-    )
-
-    preprocessor = FeatureVectorsPreprocessor(
         w=w,
         x=x,
         y=y,
         output_file=output_file,
-        quantile=quantile,
+        stat_type=stat_type,
+        anc_allele_file=anc_allele_file,
+        num_src=num_src,
     )
 
-    header = f"Chrom\tStart\tEnd\tRef\tTgt\tSrc\tU\tQ{int(quantile*100)}\n"
+    header = f"Chrom\tStart\tEnd\tRef\tTgt\tSrc\tnum_SNP\t{stat_type}\tCandidate\n"
 
     directory = os.path.dirname(output_file)
     if directory:
@@ -114,61 +111,122 @@ def score(
     with open(output_file, "w") as f:
         f.write(header)
 
-    mp_manager(
-        data_processor=preprocessor,
-        data_generator=generator,
-        nprocess=num_workers,
-    )
+    items = []
+
+    for params in generator.get():
+        items.extend(preprocessor.run(**params))
+
+    preprocessor.process_items(items)
 
 
-def outlier(
-    score_file: str, output_dir: str, output_prefix: str, quantile: float
-) -> None:
+def outlier(score_file: str, output: str, quantile: float) -> None:
     """
-    Outputs rows exceeding the specified quantile for the second-to-last column (assumed to be 'U')
-    and the last column (assumed to start with 'Q'), sorted by Start and then End columns.
+    Outputs rows exceeding the specified quantile for the chosen column ('U' or 'Q'),
+    sorted by Start and then End columns.
 
     Parameters
     ----------
     score_file : str
         Path to the input file, in CSV format.
-    output_dir : str
-        Directory to store the output files.
-    output_prefix : str
-        Prefix for the output filenames.
+    output : str
+        Path to the output file.
     quantile : float
         Quantile threshold to filter rows.
     """
     # Read the input data file
-    data = pd.read_csv(score_file, sep="\t")
-
-    # Identify the U and Q columns as the second-to-last and last columns, respectively
-    u_column = data.columns[-2]
-    q_column = data.columns[-1]
-
-    # Calculate quantile thresholds for the U and Q columns
-    u_threshold = data[u_column].quantile(quantile)
-    q_threshold = data[q_column].quantile(quantile)
-
-    # Filter rows where values exceed the quantile thresholds
-    u_outliers = data[data[u_column] > u_threshold]
-    q_outliers = data[data[q_column] > q_threshold]
-
-    # Sort the filtered data by 'Start' and then 'End' columns
-    u_outliers_sorted = u_outliers.sort_values(by=["Start", "End"])
-    q_outliers_sorted = q_outliers.sort_values(by=["Start", "End"])
-
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Define output file paths
-    u_outliers_file = os.path.join(
-        output_dir, f"{output_prefix}_{u_column}_outliers.tsv"
-    )
-    q_outliers_file = os.path.join(
-        output_dir, f"{output_prefix}_{q_column}_outliers.tsv"
+    data = pd.read_csv(
+        score_file, sep="\t", dtype={"Candidate Position": str}, index_col=False
     )
 
-    # Save the sorted filtered data to output files
-    u_outliers_sorted.to_csv(u_outliers_file, index=False, sep="\t")
-    q_outliers_sorted.to_csv(q_outliers_file, index=False, sep="\t")
+    column = data.columns[-2]
+
+    # Convert column to numeric for computation
+    data[column] = pd.to_numeric(data[column], errors="coerce")
+
+    # Calculate quantile threshold for the chosen column
+    threshold = data[column].quantile(quantile)
+
+    # Filter rows where values exceed the quantile threshold
+    outliers = data[data[column] > threshold]
+
+    # Sort the filtered data by 'Chrom', 'Start', 'End' columns
+    if not outliers.empty:
+        outliers = outliers.reset_index(drop=True)
+        outliers_sorted = outliers.iloc[
+            natsorted(
+                outliers.index,
+                key=lambda i: (
+                    outliers.loc[i, "Chrom"],
+                    int(outliers.loc[i, "Start"]),
+                    int(outliers.loc[i, "End"]),
+                ),
+            )
+        ]
+    else:
+        outliers_sorted = outliers
+
+    # Convert all columns to string before saving
+    outliers_sorted = outliers_sorted.astype(str)
+
+    # Save the sorted filtered data to the output file
+    outliers_sorted.to_csv(output, index=False, sep="\t")
+
+
+def plot(
+    outlier_file: str,
+    output: str,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    figsize_x: float = 6,
+    figsize_y: float = 6,
+    dpi: int = 300,
+    alpha: float = 0.6,
+) -> None:
+    """
+    Reads an outlier file and creates a scatter plot with U values on the Y-axis
+    and Q values on the X-axis, then saves the plot to the specified output file.
+
+    Parameters
+    ----------
+    outlier_file : str
+        Path to the input file containing outlier data.
+    output : str
+        Path to save the output plot.
+    xlabel : str
+        Label for the X-axis.
+    ylabel : str
+        Label for the Y-axis.
+    title : str
+        Title of the plot.
+    figsize_x : float, optional
+        Width of the figure (default: 6).
+    figsize_y : float, optional
+        Height of the figure (default: 6).
+    dpi : int, optional
+        Resolution of the saved plot (default: 300).
+    alpha : float, optional
+        Transparency level of scatter points (default: 0.6).
+    """
+    # Read the input file
+    data = pd.read_csv(outlier_file, sep="\t")
+
+    # Identify the U and Q columns
+    u_column = data.columns[-4]
+    q_column = data.columns[-3]
+
+    # Convert to numeric
+    data[u_column] = pd.to_numeric(data[u_column], errors="coerce")
+    data[q_column] = pd.to_numeric(data[q_column], errors="coerce")
+
+    # Plot
+    plt.figure(figsize=(figsize_x, figsize_y))
+    plt.scatter(data[q_column], data[u_column], alpha=alpha)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(alpha=0.5, linestyle="--")
+
+    # Save plot
+    plt.savefig(output, dpi=dpi)
+    plt.close()

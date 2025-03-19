@@ -18,7 +18,6 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-import numpy as np
 from sai.utils.multiprocessing import mp_manager
 from sai.utils.preprocessors import DataPreprocessor
 from sai.utils.generators import DataGenerator
@@ -26,7 +25,7 @@ from sai.utils.generators import DataGenerator
 
 class TmpDataPreprocessor(DataPreprocessor):
     def run(self, rep):
-        return rep
+        return [rep]
 
     def process_items(self, items):
         print(items)
@@ -47,7 +46,7 @@ class TmpDataGenerator(DataGenerator):
 
 class FailureDataPreprocessor(DataPreprocessor):
     def run(self, rep):
-        raise Exception(f"Simulating failure by stopping.")
+        raise Exception("Simulating failure by stopping.")
 
     def process_items(self, items):
         print(items)
@@ -56,7 +55,6 @@ class FailureDataPreprocessor(DataPreprocessor):
 def test_mp_manager(capfd):
     nprocess = 2
     nrep = 5
-    seed = 2
 
     data_processor = TmpDataPreprocessor()
     generator = TmpDataGenerator(nrep=nrep)
@@ -66,11 +64,11 @@ def test_mp_manager(capfd):
     )
 
     # Define the expected set of outputs
-    expected_set = set(map(str, range(5)))
+    expected_set = {"[0, 1, 2, 3, 4]"}
 
     # Capture the actual output and convert it to a set of strings
     captured = capfd.readouterr()
-    actual_set = set(captured.out.strip().split("\n"))
+    actual_set = {captured.out.strip()}
 
     # Compare the actual and expected sets
     assert actual_set == expected_set, "The output does not match the expected results."
