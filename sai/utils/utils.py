@@ -646,7 +646,7 @@ def split_genome(
         win_start = 1
 
     # Create windows based on step size and window size
-    while win_start < pos[-1]:
+    while win_start <= pos[-1]:
         win_end = win_start + window_size - 1
         window_positions.append((win_start, win_end))
         win_start += step_size
