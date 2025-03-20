@@ -121,7 +121,9 @@ def test_outlier(example_data):
     assert df["Q95"].iloc[0] == 0.7
 
     outlier(
-        score_file="tests/data/test.Q.scores", output=str(q_outliers_file), quantile=0.5
+        score_file="tests/data/test.Q.scores",
+        output=str(q_outliers_file),
+        quantile=0.75,
     )
 
     df = pd.read_csv(str(q_outliers_file), sep="\t")
