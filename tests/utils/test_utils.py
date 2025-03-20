@@ -454,7 +454,7 @@ def test_split_genome():
     window_size = 30
     step_size = 20
     result = split_genome(pos, window_size, step_size)
-    expected = [(0, 30), (20, 50), (40, 70), (60, 90), (80, 110)]
+    expected = [(1, 30), (21, 50), (41, 70), (61, 90), (81, 110)]
     assert result == expected, f"Expected {expected}, but got {result}"
 
     # Test case 2: Step size is larger than window size

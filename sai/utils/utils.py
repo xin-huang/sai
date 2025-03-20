@@ -94,7 +94,7 @@ def read_geno_data(
     start: int, optional
         The starting position (1-based, inclusive) on the chromosome. Default: None.
     end: int, optional
-        The ending position (1-based, exclusive) on the chromosome. Default: None.
+        The ending position (1-based, inclusive) on the chromosome. Default: None.
     anc_allele_file : str, optional
         The name of the BED file containing ancestral allele information, or None if not provided.
     filter_missing : bool, optional
@@ -117,7 +117,7 @@ def read_geno_data(
         if (start is None) and (end is None):
             region = f"{chr_name}"
         else:
-            region = f"{chr_name}:{start}-{max(start, end-1)}"
+            region = f"{chr_name}:{start}-{end}"
         vcf_data = allel.read_vcf(
             vcf,
             fields=[
@@ -252,7 +252,7 @@ def read_data(
     start: int, optional
         The starting position (1-based, inclusive) on the chromosome. Default: None.
     end: int, optional
-        The ending position (1-based, exclusive) on the chromosome. Default: None.
+        The ending position (1-based, inclusive) on the chromosome. Default: None.
     is_phased : bool, optional
         Whether to use phased genotypes. Default: True.
     filter_ref : bool, optional
@@ -641,13 +641,13 @@ def split_genome(
         raise ValueError("`pos` array must not be empty.")
 
     window_positions = []
-    win_start = (pos[0] + step_size) // step_size * step_size - window_size
-    if win_start < 0:
-        win_start = 0
+    win_start = (pos[0] + step_size) // step_size * step_size - window_size + 1
+    if win_start < 1:
+        win_start = 1
 
     # Create windows based on step size and window size
     while win_start < pos[-1]:
-        win_end = win_start + window_size
+        win_end = win_start + window_size - 1
         window_positions.append((win_start, win_end))
         win_start += step_size
 
