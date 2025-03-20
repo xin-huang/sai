@@ -131,25 +131,15 @@ def test_outlier(example_data):
     assert df["Q95"].iloc[1] == 1.0
 
 
-@pytest.fixture
-def sample_outlier_file():
-    """Create a temporary outlier file to simulate input data."""
-    with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".tsv") as tmpfile:
-        tmpfile.write("A\tB\tC\tD\tE\tF\tG\tH\tI\n")  # Example column names
-        tmpfile.write("1\t2\t3\t4\t5\t6\t7\t0.1\t0.2\n")  # Example data
-        tmpfile.write("2\t3\t4\t5\t6\t7\t8\t0.3\t0.4\n")
-        tmpfile.write("3\t4\t5\t6\t7\t8\t9\t0.5\t0.6\n")
-        return tmpfile.name
-
-
-def test_plot(sample_outlier_file):
+def test_plot():
     """Test if the plot function correctly generates an output file."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_output:
         output_file = tmp_output.name
 
     # Call the plot function
     plot(
-        outlier_file=sample_outlier_file,
+        u_outlier_file="tests/data/test.u.outliers.tsv",
+        q_outlier_file="tests/data/test.q.outliers.tsv",
         output=output_file,
         xlabel="Q Values",
         ylabel="U Values",
@@ -160,5 +150,4 @@ def test_plot(sample_outlier_file):
     assert os.path.exists(output_file), "Plot output file was not created."
 
     # Clean up temporary files
-    os.remove(sample_outlier_file)
     os.remove(output_file)

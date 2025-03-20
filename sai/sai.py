@@ -19,6 +19,7 @@
 
 
 import os
+import sys
 import warnings
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -186,7 +187,8 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
 
 
 def plot(
-    outlier_file: str,
+    u_outlier_file: str,
+    q_outlier_file: str,
     output: str,
     xlabel: str,
     ylabel: str,
@@ -197,13 +199,14 @@ def plot(
     alpha: float = 0.6,
 ) -> None:
     """
-    Reads an outlier file and creates a scatter plot with U values on the Y-axis
-    and Q values on the X-axis, then saves the plot to the specified output file.
+    Reads two outlier files (U and Q), finds common candidate positions, and plots U vs. Q.
 
     Parameters
     ----------
-    outlier_file : str
-        Path to the input file containing outlier data.
+    u_outlier_file : str
+        Path to the input file containing U outlier data.
+    q_outlier_file : str
+        Path to the input file containing Q outlier data.
     output : str
         Path to save the output plot.
     xlabel : str
@@ -221,20 +224,60 @@ def plot(
     alpha : float, optional
         Transparency level of scatter points (default: 0.6).
     """
-    # Read the input file
-    data = pd.read_csv(outlier_file, sep="\t")
 
-    # Identify the U and Q columns
-    u_column = data.columns[-4]
-    q_column = data.columns[-3]
+    # Read input files
+    u_data = pd.read_csv(u_outlier_file, sep="\t")
+    q_data = pd.read_csv(q_outlier_file, sep="\t")
 
-    # Convert to numeric
-    data[u_column] = pd.to_numeric(data[u_column], errors="coerce")
-    data[q_column] = pd.to_numeric(data[q_column], errors="coerce")
+    # Identify columns
+    u_column = u_data.columns[-2]
+    q_column = q_data.columns[-2]
+
+    # Create genomic interval key as `chr:start-end`
+    u_data["interval"] = u_data["Chrom"].astype(str) + ":" + u_data["Start"].astype(str) + "-" + u_data["End"].astype(str)
+    q_data["interval"] = q_data["Chrom"].astype(str) + ":" + q_data["Start"].astype(str) + "-" + q_data["End"].astype(str)
+
+    # Convert U and Q columns to numeric
+    u_data[u_column] = pd.to_numeric(u_data[u_column], errors="coerce")
+    q_data[q_column] = pd.to_numeric(q_data[q_column], errors="coerce")
+
+    # Convert to dictionary: {interval: value}
+    u_interval_dict = {row["interval"]: row[u_column] for _, row in u_data.iterrows()}
+    q_interval_dict = {row["interval"]: row[q_column] for _, row in q_data.iterrows()}
+
+    # Find intersection of intervals
+    common_intervals = set(u_interval_dict.keys()) & set(q_interval_dict.keys())
+
+    if not common_intervals:
+        warnings.warn("No common genomic intervals found between U and Q outlier files. The plot will be empty.", UserWarning)
+        sys.exit(1)
+
+    # Create DataFrame for intersection and save to file
+    intersection_df = pd.DataFrame({
+        "Chrom": [interval.split(":")[0] for interval in common_intervals],
+        "Start": [int(interval.split(":")[1].split("-")[0]) for interval in common_intervals],
+        "End": [int(interval.split(":")[1].split("-")[1]) for interval in common_intervals],
+        u_column: [u_interval_dict[c] for c in common_intervals],
+        q_column: [q_interval_dict[c] for c in common_intervals]
+    })
+
+    # Save intersection data
+    intersection_df_sorted = intersection_df.iloc[
+        natsorted(
+            intersection_df.index,
+            key=lambda i: (
+                intersection_df.loc[i, "Chrom"],
+                int(intersection_df.loc[i, "Start"]),
+                int(intersection_df.loc[i, "End"]),
+            ),
+        )
+    ]
+    intersection_output = os.path.splitext(output)[0] + ".intersection.tsv"
+    intersection_df_sorted.to_csv(intersection_output, sep="\t", index=False)
 
     # Plot
     plt.figure(figsize=(figsize_x, figsize_y))
-    plt.scatter(data[q_column], data[u_column], alpha=alpha)
+    plt.scatter(intersection_df[q_column], intersection_df[u_column], alpha=alpha)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
