@@ -23,9 +23,9 @@ import sys
 import warnings
 import pandas as pd
 import matplotlib.pyplot as plt
-from natsort import natsorted
 from sai.utils.generators import ChunkGenerator
 from sai.utils.preprocessors import ChunkPreprocessor
+from sai.utils.utils import natsorted_df
 
 
 def score(
@@ -166,16 +166,7 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
     # Sort the filtered data by 'Chrom', 'Start', 'End' columns
     if not outliers.empty:
         outliers = outliers.reset_index(drop=True)
-        outliers_sorted = outliers.iloc[
-            natsorted(
-                outliers.index,
-                key=lambda i: (
-                    outliers.loc[i, "Chrom"],
-                    int(outliers.loc[i, "Start"]),
-                    int(outliers.loc[i, "End"]),
-                ),
-            )
-        ]
+        outliers_sorted = natsorted_df(outliers)
     else:
         outliers_sorted = outliers
 
@@ -234,8 +225,20 @@ def plot(
     q_column = q_data.columns[-2]
 
     # Create genomic interval key as `chr:start-end`
-    u_data["interval"] = u_data["Chrom"].astype(str) + ":" + u_data["Start"].astype(str) + "-" + u_data["End"].astype(str)
-    q_data["interval"] = q_data["Chrom"].astype(str) + ":" + q_data["Start"].astype(str) + "-" + q_data["End"].astype(str)
+    u_data["interval"] = (
+        u_data["Chrom"].astype(str)
+        + ":"
+        + u_data["Start"].astype(str)
+        + "-"
+        + u_data["End"].astype(str)
+    )
+    q_data["interval"] = (
+        q_data["Chrom"].astype(str)
+        + ":"
+        + q_data["Start"].astype(str)
+        + "-"
+        + q_data["End"].astype(str)
+    )
 
     # Convert U and Q columns to numeric
     u_data[u_column] = pd.to_numeric(u_data[u_column], errors="coerce")
@@ -249,29 +252,31 @@ def plot(
     common_intervals = set(u_interval_dict.keys()) & set(q_interval_dict.keys())
 
     if not common_intervals:
-        warnings.warn("No common genomic intervals found between U and Q outlier files. The plot will be empty.", UserWarning)
+        warnings.warn(
+            "No common genomic intervals found between U and Q outlier files. The plot will be empty.",
+            UserWarning,
+        )
         sys.exit(1)
 
     # Create DataFrame for intersection and save to file
-    intersection_df = pd.DataFrame({
-        "Chrom": [interval.split(":")[0] for interval in common_intervals],
-        "Start": [int(interval.split(":")[1].split("-")[0]) for interval in common_intervals],
-        "End": [int(interval.split(":")[1].split("-")[1]) for interval in common_intervals],
-        u_column: [u_interval_dict[c] for c in common_intervals],
-        q_column: [q_interval_dict[c] for c in common_intervals]
-    })
+    intersection_df = pd.DataFrame(
+        {
+            "Chrom": [interval.split(":")[0] for interval in common_intervals],
+            "Start": [
+                int(interval.split(":")[1].split("-")[0])
+                for interval in common_intervals
+            ],
+            "End": [
+                int(interval.split(":")[1].split("-")[1])
+                for interval in common_intervals
+            ],
+            u_column: [u_interval_dict[c] for c in common_intervals],
+            q_column: [q_interval_dict[c] for c in common_intervals],
+        }
+    )
 
     # Save intersection data
-    intersection_df_sorted = intersection_df.iloc[
-        natsorted(
-            intersection_df.index,
-            key=lambda i: (
-                intersection_df.loc[i, "Chrom"],
-                int(intersection_df.loc[i, "Start"]),
-                int(intersection_df.loc[i, "End"]),
-            ),
-        )
-    ]
+    intersection_df_sorted = natsorted_df(intersection_df)
     intersection_output = os.path.splitext(output)[0] + ".intersection.tsv"
     intersection_df_sorted.to_csv(intersection_output, sep="\t", index=False)
 
@@ -281,7 +286,7 @@ def plot(
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.grid(alpha=0.5, linestyle="--")
+    plt.grid(alpha=alpha, linestyle="--")
 
     # Save plot
     plt.savefig(output, dpi=dpi)

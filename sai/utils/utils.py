@@ -20,7 +20,9 @@
 
 import allel
 import numpy as np
+import pandas as pd
 from typing import Optional, Union
+from natsort import natsorted
 from sai.utils.genomic_dataclasses import ChromosomeData
 
 
@@ -652,3 +654,38 @@ def split_genome(
         win_start += step_size
 
     return window_positions
+
+
+def natsorted_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Sorts a DataFrame naturally by "Chrom", "Start", and "End" columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to be sorted.
+
+    Returns
+    -------
+    pd.DataFrame
+        The naturally sorted DataFrame.
+
+    Raises
+    ------
+    ValueError
+        If the required columns "Chrom", "Start", or "End" are missing.
+    """
+    required_columns = {"Chrom", "Start", "End"}
+    missing_columns = required_columns - set(df.columns)
+
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+    df["Start"] = df["Start"].astype(int)
+    df["End"] = df["End"].astype(int)
+
+    sorted_indices = natsorted(
+        df.index, key=lambda i: (df.at[i, "Chrom"], df.at[i, "Start"], df.at[i, "End"])
+    )
+
+    return df.loc[sorted_indices].reset_index(drop=True)
