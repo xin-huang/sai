@@ -154,7 +154,7 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
     if data[column].nunique() == 1:
         warnings.warn(f"Column '{column}' contains only one unique value ({threshold}), making quantile filtering meaningless.", UserWarning)
         outliers = data
-    elif (quantile == 1) and (column.startswith("Q")):
+    elif (threshold == 1) and (column.startswith("Q")):
         outliers = data[data[column] >= threshold]
     else:
         outliers = data[data[column] > threshold]
