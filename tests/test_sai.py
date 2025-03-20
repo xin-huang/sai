@@ -97,27 +97,37 @@ def test_outlier(example_data):
         num_workers=1,
     )
 
-    # Define output files for U and Q outliers
-    u_outliers_file = example_data["output_dir"] / "U_outliers.tsv"
-    q_outliers_file = example_data["output_dir"] / "Q_outliers.tsv"
+    outliers_file = example_data["output_dir"] / "outliers.tsv"
 
-    # Run the outlier function for U
-    outlier(
-        score_file=str(example_data["output_file"]),
-        output=str(u_outliers_file),
-        quantile=0.95,
-    )
+    # Run the outlier function
+    with pytest.warns(UserWarning, match="only one unique value"):
+        outlier(
+            score_file=str(example_data["output_file"]),
+            output=str(outliers_file),
+            quantile=0.95,
+        )
 
-    # Run the outlier function for Q
+    assert outliers_file.exists()
+
+    q_outliers_file = example_data["output_dir"] / "q_outliers.tsv"
+    
     outlier(
-        score_file=str(example_data["output_file"]),
+        score_file="tests/data/test.Q.scores",
         output=str(q_outliers_file),
-        quantile=0.95,
+        quantile=0.95
     )
 
-    # Check if the outlier files are created
-    assert u_outliers_file.exists()
-    assert q_outliers_file.exists()
+    df = pd.read_csv(str(q_outliers_file), sep="\t")
+    assert df["Q95"].iloc[0] == 1.0
+
+    outlier(
+        score_file="tests/data/test.Q.scores",
+        output=str(q_outliers_file),
+        quantile=0.5
+    )
+
+    df = pd.read_csv(str(q_outliers_file), sep="\t")
+    assert df["Q95"].iloc[0] == 0.7
 
 
 @pytest.fixture

@@ -19,6 +19,7 @@
 
 
 import os
+import warnings
 import pandas as pd
 import matplotlib.pyplot as plt
 from natsort import natsorted
@@ -150,8 +151,13 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
     # Calculate quantile threshold for the chosen column
     threshold = data[column].quantile(quantile)
 
-    # Filter rows where values exceed or equal to the quantile threshold
-    outliers = data[data[column] >= threshold]
+    if data[column].nunique() == 1:
+        warnings.warn(f"Column '{column}' contains only one unique value ({threshold}), making quantile filtering meaningless.", UserWarning)
+        outliers = data
+    elif (quantile == 1) and (column.startswith("Q")):
+        outliers = data[data[column] >= threshold]
+    else:
+        outliers = data[data[column] > threshold]
 
     # Sort the filtered data by 'Chrom', 'Start', 'End' columns
     if not outliers.empty:
