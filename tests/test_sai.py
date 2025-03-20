@@ -110,24 +110,23 @@ def test_outlier(example_data):
     assert outliers_file.exists()
 
     q_outliers_file = example_data["output_dir"] / "q_outliers.tsv"
-    
-    outlier(
-        score_file="tests/data/test.Q.scores",
-        output=str(q_outliers_file),
-        quantile=0.95
-    )
-
-    df = pd.read_csv(str(q_outliers_file), sep="\t")
-    assert df["Q95"].iloc[0] == 1.0
 
     outlier(
         score_file="tests/data/test.Q.scores",
         output=str(q_outliers_file),
-        quantile=0.5
+        quantile=0.25,
     )
 
     df = pd.read_csv(str(q_outliers_file), sep="\t")
     assert df["Q95"].iloc[0] == 0.7
+
+    outlier(
+        score_file="tests/data/test.Q.scores", output=str(q_outliers_file), quantile=0.5
+    )
+
+    df = pd.read_csv(str(q_outliers_file), sep="\t")
+    assert df["Q95"].iloc[0] == 1.0
+    assert df["Q95"].iloc[1] == 1.0
 
 
 @pytest.fixture
