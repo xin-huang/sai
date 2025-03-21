@@ -36,7 +36,7 @@ def test_chunk_generator():
     assert len(generator) == 2  # num_workers
 
     # Check that chunks were split correctly
-    expected_chunks = [(0, 30000), (30000, 55000)]
+    expected_chunks = [(1, 30000), (30001, 55000)]
     assert generator.chunks == expected_chunks
 
 

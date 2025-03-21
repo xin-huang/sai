@@ -20,7 +20,9 @@
 
 import allel
 import numpy as np
+import pandas as pd
 from typing import Optional, Union
+from natsort import natsorted
 from sai.utils.genomic_dataclasses import ChromosomeData
 
 
@@ -94,7 +96,7 @@ def read_geno_data(
     start: int, optional
         The starting position (1-based, inclusive) on the chromosome. Default: None.
     end: int, optional
-        The ending position (1-based, exclusive) on the chromosome. Default: None.
+        The ending position (1-based, inclusive) on the chromosome. Default: None.
     anc_allele_file : str, optional
         The name of the BED file containing ancestral allele information, or None if not provided.
     filter_missing : bool, optional
@@ -117,7 +119,7 @@ def read_geno_data(
         if (start is None) and (end is None):
             region = f"{chr_name}"
         else:
-            region = f"{chr_name}:{start}-{max(start, end-1)}"
+            region = f"{chr_name}:{start}-{end}"
         vcf_data = allel.read_vcf(
             vcf,
             fields=[
@@ -252,7 +254,7 @@ def read_data(
     start: int, optional
         The starting position (1-based, inclusive) on the chromosome. Default: None.
     end: int, optional
-        The ending position (1-based, exclusive) on the chromosome. Default: None.
+        The ending position (1-based, inclusive) on the chromosome. Default: None.
     is_phased : bool, optional
         Whether to use phased genotypes. Default: True.
     filter_ref : bool, optional
@@ -641,14 +643,47 @@ def split_genome(
         raise ValueError("`pos` array must not be empty.")
 
     window_positions = []
-    win_start = (pos[0] + step_size) // step_size * step_size - window_size
-    if win_start < 0:
-        win_start = 0
+    win_start = (pos[0] + step_size) // step_size * step_size - window_size + 1
+    win_start = max(win_start, 1)
 
     # Create windows based on step size and window size
-    while win_start < pos[-1]:
-        win_end = win_start + window_size
+    while win_start <= pos[-1]:
+        win_end = win_start + window_size - 1
         window_positions.append((win_start, win_end))
         win_start += step_size
 
     return window_positions
+
+
+def natsorted_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Sorts a DataFrame naturally by "Chrom", "Start", and "End" columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to be sorted.
+
+    Returns
+    -------
+    pd.DataFrame
+        The naturally sorted DataFrame.
+
+    Raises
+    ------
+    ValueError
+        If the required columns "Chrom", "Start", or "End" are missing.
+    """
+    required_columns = {"Chrom", "Start", "End"}
+
+    if missing_columns := required_columns - set(df.columns):
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+    df["Start"] = df["Start"].astype(int)
+    df["End"] = df["End"].astype(int)
+
+    sorted_indices = natsorted(
+        df.index, key=lambda i: (df.at[i, "Chrom"], df.at[i, "Start"], df.at[i, "End"])
+    )
+
+    return df.loc[sorted_indices].reset_index(drop=True)
