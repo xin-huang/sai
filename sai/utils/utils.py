@@ -644,8 +644,7 @@ def split_genome(
 
     window_positions = []
     win_start = (pos[0] + step_size) // step_size * step_size - window_size + 1
-    if win_start < 1:
-        win_start = 1
+    win_start = max(win_start, 1)
 
     # Create windows based on step size and window size
     while win_start <= pos[-1]:
@@ -676,9 +675,8 @@ def natsorted_df(df: pd.DataFrame) -> pd.DataFrame:
         If the required columns "Chrom", "Start", or "End" are missing.
     """
     required_columns = {"Chrom", "Start", "End"}
-    missing_columns = required_columns - set(df.columns)
 
-    if missing_columns:
+    if missing_columns := required_columns - set(df.columns):
         raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
 
     df["Start"] = df["Start"].astype(int)

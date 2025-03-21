@@ -252,11 +252,9 @@ def plot(
     common_intervals = set(u_interval_dict.keys()) & set(q_interval_dict.keys())
 
     if not common_intervals:
-        warnings.warn(
+        raise ValueError(
             "No common genomic intervals found between U and Q outlier files. The plot will be empty.",
-            UserWarning,
         )
-        sys.exit(1)
 
     # Create DataFrame for intersection and save to file
     intersection_df = pd.DataFrame(
