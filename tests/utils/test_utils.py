@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -21,6 +21,7 @@
 import allel
 import pytest
 import numpy as np
+import pandas as pd
 from unittest.mock import mock_open, patch
 from sai.utils import ChromosomeData
 from sai.utils import extract_group_data
@@ -33,6 +34,7 @@ from sai.utils import read_anc_allele
 from sai.utils import read_data
 from sai.utils import read_geno_data
 from sai.utils import split_genome
+from sai.utils import natsorted_df
 
 
 def test_valid_file():
@@ -454,7 +456,7 @@ def test_split_genome():
     window_size = 30
     step_size = 20
     result = split_genome(pos, window_size, step_size)
-    expected = [(0, 30), (20, 50), (40, 70), (60, 90), (80, 110)]
+    expected = [(1, 30), (21, 50), (41, 70), (61, 90), (81, 110)]
     assert result == expected, f"Expected {expected}, but got {result}"
 
     # Test case 2: Step size is larger than window size
@@ -473,3 +475,67 @@ def test_split_genome():
     step_size = 10
     with pytest.raises(ValueError, match="`pos` array must not be empty"):
         split_genome(pos, window_size, step_size)
+
+
+def test_natsorted_df_correct_order():
+    df = pd.DataFrame(
+        {
+            "Chrom": ["1", "10", "2", "X", "1"],
+            "Start": [300, 50, 150, 10, 100],
+            "End": [400, 100, 200, 50, 200],
+        }
+    )
+
+    sorted_df = natsorted_df(df)
+
+    expected_df = pd.DataFrame(
+        {
+            "Chrom": ["1", "1", "2", "10", "X"],
+            "Start": [100, 300, 150, 50, 10],
+            "End": [200, 400, 200, 100, 50],
+        }
+    ).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(sorted_df, expected_df)
+
+
+def test_natsorted_df_missing_columns():
+    df_missing = pd.DataFrame(
+        {
+            "Chrom": ["1", "2", "X"],
+            "Start": [100, 200, 300],
+        }
+    )
+
+    with pytest.raises(ValueError, match="Missing required columns: End"):
+        natsorted_df(df_missing)
+
+
+def test_natsorted_df_empty_dataframe():
+    df_empty = pd.DataFrame(columns=["Chrom", "Start", "End"])
+    sorted_df = natsorted_df(df_empty)
+
+    assert sorted_df.empty
+
+
+def test_natsorted_df_single_row():
+    df_single = pd.DataFrame({"Chrom": ["1"], "Start": [100], "End": [200]})
+
+    sorted_df = natsorted_df(df_single)
+
+    pd.testing.assert_frame_equal(sorted_df, df_single)
+
+
+def test_natsorted_df_integer_start_end():
+    df_mixed_types = pd.DataFrame(
+        {
+            "Chrom": ["1", "2", "X"],
+            "Start": ["100", "200", "300"],
+            "End": ["150", "250", "350"],
+        }
+    )
+
+    sorted_df = natsorted_df(df_mixed_types)
+
+    assert sorted_df["Start"].dtype == int
+    assert sorted_df["End"].dtype == int

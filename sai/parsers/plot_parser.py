@@ -32,11 +32,12 @@ def _run_plot(args: argparse.Namespace) -> None:
     Parameters
     ----------
     args : argparse.Namespace
-        Parsed command-line arguments containing input file, output file,
+        Parsed command-line arguments containing input files, output file,
         xlabel, ylabel, title, figsize_x, figsize_y, dpi, and alpha.
     """
     plot(
-        outlier_file=args.input,
+        u_outlier_file=args.u_outlier,
+        q_outlier_file=args.q_outlier,
         output=args.output,
         xlabel=args.xlabel,
         ylabel=args.ylabel,
@@ -62,10 +63,18 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         "plot", help="Generate a scatter plot of U vs Q statistics."
     )
     parser.add_argument(
-        "--outlier",
+        "--u-outlier",
+        dest="u_outlier",
         type=existed_file,
         required=True,
-        help="Path to the input outlier file.",
+        help="Path to the U outlier file.",
+    )
+    parser.add_argument(
+        "--q-outlier",
+        dest="q_outlier",
+        type=existed_file,
+        required=True,
+        help="Path to the Q outlier file.",
     )
     parser.add_argument(
         "--output",

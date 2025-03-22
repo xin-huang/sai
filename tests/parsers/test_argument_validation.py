@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #

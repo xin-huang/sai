@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -78,6 +78,23 @@ def test_run(feature_preprocessor):
     assert result[0]["src_pop_list"] == src_pop_list
     assert "statistic" in result[0]
     assert "candidates" in result[0]
+
+    result = feature_preprocessor.run(
+        chr_name=chr_name,
+        ref_pop=ref_pop,
+        tgt_pop=tgt_pop,
+        src_pop_list=src_pop_list,
+        start=start,
+        end=end,
+        pos=pos,
+        ref_gts=None,
+        tgt_gts=None,
+        src_gts_list=None,
+        ploidy=None,
+    )
+
+    assert np.isnan(result[0]["statistic"])
+    assert result[0]["candidates"].size == 0
 
 
 def test_process_items(feature_preprocessor, tmp_path):

@@ -1,2 +1,2 @@
-Chrom	Start	End	Ref	Tgt	Src	U	Q95
-21	0	3333	AFR	CHB	Nean	3	0.9
+Chrom	Start	End	Ref	Tgt	Src	N(SNP)	U	Candidate
+21	0	3333	AFR	CHB	Nean	1	3	21:999,21:1111,21:2222

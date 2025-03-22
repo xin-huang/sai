@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -164,7 +164,7 @@ def test_calc_q_edge_case():
 
     # Expected output
     expected_result = 0.9666666666666667
-    expected_positions = np.array([0, 1])
+    expected_positions = np.array([1])
 
     # Run test
     result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
