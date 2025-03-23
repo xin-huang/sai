@@ -301,6 +301,10 @@ def plot(
         c=marker_color,
         marker=marker_style,
     )
+    xmin, xmax = plt.gca().get_xlim()
+    ymin, ymax = plt.gca().get_ylim()
+    plt.xlim(left=max(0, xmin))
+    plt.ylim(bottom=max(0, ymin))
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
