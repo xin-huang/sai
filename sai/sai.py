@@ -304,7 +304,7 @@ def plot(
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.grid(alpha=alpha, linestyle="--")
+    plt.grid(alpha=0.5, linestyle="--")
 
     # Save plot
     plt.savefig(output, dpi=dpi)

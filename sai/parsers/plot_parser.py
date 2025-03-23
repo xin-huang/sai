@@ -147,6 +147,6 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         dest="marker_style",
         type=str,
         default="o",
-        help="Shape of the marker. See matplotlib.pyplot.scatter. Default: o.",
+        help="Shape of the markers. See matplotlib.pyplot.scatter. Default: o.",
     )
     parser.set_defaults(runner=_run_plot)
