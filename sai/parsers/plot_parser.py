@@ -33,11 +33,12 @@ def _run_plot(args: argparse.Namespace) -> None:
     ----------
     args : argparse.Namespace
         Parsed command-line arguments containing input files, output file,
-        xlabel, ylabel, title, figsize_x, figsize_y, dpi, and alpha.
+        xlabel, ylabel, title, figsize_x, figsize_y, dpi, alpha,
+        marker_size, marker_color, and marker_style.
     """
     plot(
-        u_outlier_file=args.u_outlier,
-        q_outlier_file=args.q_outlier,
+        u_file=args.u_file,
+        q_file=args.q_file,
         output=args.output,
         xlabel=args.xlabel,
         ylabel=args.ylabel,
@@ -46,6 +47,9 @@ def _run_plot(args: argparse.Namespace) -> None:
         figsize_y=args.figsize_y,
         dpi=args.dpi,
         alpha=args.alpha,
+        marker_size=args.marker_size,
+        marker_color=args.marker_color,
+        marker_style=args.marker_style,
     )
 
 
@@ -63,18 +67,18 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         "plot", help="Generate a scatter plot of U vs Q statistics."
     )
     parser.add_argument(
-        "--u-outlier",
-        dest="u_outlier",
+        "--u-file",
+        dest="u_file",
         type=existed_file,
         required=True,
-        help="Path to the U outlier file.",
+        help="Path to the U score/outlier file.",
     )
     parser.add_argument(
-        "--q-outlier",
-        dest="q_outlier",
+        "--q-file",
+        dest="q_file",
         type=existed_file,
         required=True,
-        help="Path to the Q outlier file.",
+        help="Path to the Q score/outlier file.",
     )
     parser.add_argument(
         "--output",
@@ -123,5 +127,26 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         type=positive_number,
         default=0.6,
         help="Transparency level of scatter points. Default: 0.6.",
+    )
+    parser.add_argument(
+        "--marker-size",
+        dest="marker_size",
+        type=positive_number,
+        default=20,
+        help="Size of the scatter plot markers. See matplotlib.pyplot.scatter. Default: 20.",
+    )
+    parser.add_argument(
+        "--marker-color",
+        dest="marker_color",
+        type=str,
+        default="blue",
+        help="Color of the markers. See matplotlib.pyplot.scatter. Default: blue",
+    )
+    parser.add_argument(
+        "--marker-style",
+        dest="marker_style",
+        type=str,
+        default="o",
+        help="Shape of the marker. See matplotlib.pyplot.scatter. Default: o.",
     )
     parser.set_defaults(runner=_run_plot)
