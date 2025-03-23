@@ -1,4 +1,4 @@
-# Copyright 2024 Xin Huang
+# Copyright 2025 Xin Huang
 #
 # GNU General Public License v3.0
 #
@@ -48,8 +48,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        "natsort==8.4.0",
         "numpy==1.26.4",
         "pandas==2.2.1",
+        "pysam==0.23.0",
         "scikit-allel==1.3.7",
         "scipy==1.12.0",
     ],

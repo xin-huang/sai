@@ -242,6 +242,8 @@ def plot(
     # Convert U and Q columns to numeric
     u_data[u_column] = pd.to_numeric(u_data[u_column], errors="coerce")
     q_data[q_column] = pd.to_numeric(q_data[q_column], errors="coerce")
+    u_data = u_data.dropna(subset=[u_column])
+    q_data = q_data.dropna(subset=[q_column])
 
     # Convert to dictionary: {interval: value}
     u_interval_dict = {row["interval"]: row[u_column] for _, row in u_data.iterrows()}
