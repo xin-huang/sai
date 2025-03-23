@@ -22,6 +22,7 @@ import os
 import warnings
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from sai.utils.generators import ChunkGenerator
 from sai.utils.preprocessors import ChunkPreprocessor
 from sai.utils.utils import natsorted_df
@@ -177,8 +178,8 @@ def outlier(score_file: str, output: str, quantile: float) -> None:
 
 
 def plot(
-    u_outlier_file: str,
-    q_outlier_file: str,
+    u_file: str,
+    q_file: str,
     output: str,
     xlabel: str,
     ylabel: str,
@@ -187,16 +188,19 @@ def plot(
     figsize_y: float = 6,
     dpi: int = 300,
     alpha: float = 0.6,
+    marker_size: float = 20,
+    marker_color: str = "blue",
+    marker_style: str = "o",
 ) -> None:
     """
     Reads two outlier files (U and Q), finds common candidate positions, and plots U vs. Q.
 
     Parameters
     ----------
-    u_outlier_file : str
-        Path to the input file containing U outlier data.
-    q_outlier_file : str
-        Path to the input file containing Q outlier data.
+    u_file : str
+        Path to the input file containing U score/outlier data.
+    q_file : str
+        Path to the input file containing Q score/outlier data.
     output : str
         Path to save the output plot.
     xlabel : str
@@ -213,11 +217,18 @@ def plot(
         Resolution of the saved plot (default: 300).
     alpha : float, optional
         Transparency level of scatter points (default: 0.6).
+    marker_size : float, optional
+        Size of the scatter plot markers (default: 20). See matplotlib.pyplot.scatter.
+    marker_color : str, optional
+        Color of the markers (default: "blue"). See matplotlib.pyplot.scatter.
+    marker_style : str, optional
+        Shape of the marker, e.g., 'o' for circle, '^' for triangle, 's' for square (default: "o").
+        See matplotlib.pyplot.scatter for available marker styles.
     """
 
     # Read input files
-    u_data = pd.read_csv(u_outlier_file, sep="\t")
-    q_data = pd.read_csv(q_outlier_file, sep="\t")
+    u_data = pd.read_csv(u_file, sep="\t")
+    q_data = pd.read_csv(q_file, sep="\t")
 
     # Identify columns
     u_column = u_data.columns[-2]
@@ -281,7 +292,15 @@ def plot(
 
     # Plot
     plt.figure(figsize=(figsize_x, figsize_y))
-    plt.scatter(intersection_df[q_column], intersection_df[u_column], alpha=alpha)
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.scatter(
+        x=intersection_df[q_column],
+        y=intersection_df[u_column],
+        alpha=alpha,
+        s=marker_size,
+        c=marker_color,
+        marker=marker_style,
+    )
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)

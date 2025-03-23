@@ -112,7 +112,7 @@ def test_outlier(example_data):
     q_outliers_file = example_data["output_dir"] / "q_outliers.tsv"
 
     outlier(
-        score_file="tests/data/test.Q.scores",
+        score_file="tests/data/test.q.scores",
         output=str(q_outliers_file),
         quantile=0.25,
     )
@@ -121,7 +121,7 @@ def test_outlier(example_data):
     assert df["Q95"].iloc[0] == 0.7
 
     outlier(
-        score_file="tests/data/test.Q.scores",
+        score_file="tests/data/test.q.scores",
         output=str(q_outliers_file),
         quantile=0.75,
     )
@@ -138,8 +138,8 @@ def test_plot():
 
     # Call the plot function
     plot(
-        u_outlier_file="tests/data/test.u.outliers.tsv",
-        q_outlier_file="tests/data/test.q.outliers.tsv",
+        u_file="tests/data/test.u.outliers.tsv",
+        q_file="tests/data/test.q.outliers.tsv",
         output=output_file,
         xlabel="Q Values",
         ylabel="U Values",
