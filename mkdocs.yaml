@@ -1,0 +1,34 @@
+site_name: sai
+site_url: "https://xin-huang.github.io/sai"
+repo_url: "https://github.com/xin-huang/sai"
+edit_uri: ""
+docs_dir: 'docs'
+theme:
+  name: material
+  palette:
+    primary: teal
+    accent: indigo
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+      watch:
+        - sai
+markdown_extensions:
+  - extra
+  - tables
+  - fenced_code
+  - admonition
+  - codehilite
+extra_javascript:
+  - 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML'
+nav:
+- Home: 'index.md'
+- User Guide:
+  - Calculate Statistics: 'userguide/score.md'
+  - Extract Outliers: 'userguide/outlier.md'
+  - Make Plots: 'userguide/plot.md'

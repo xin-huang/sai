@@ -53,8 +53,6 @@ def test_add_score_parser(parser):
             "50000",
             "--win-step",
             "10000",
-            "--num-src",
-            "2",
             "--w",
             "0.3",
             "--x",
@@ -78,7 +76,6 @@ def test_add_score_parser(parser):
     assert args.src == "tests/data/example.src.ind.list"
     assert args.win_len == 50000
     assert args.win_step == 10000
-    assert args.num_src == 2
     assert args.anc_alleles is None
     assert args.w == 0.3
     assert args.x == 0.5
@@ -94,7 +91,7 @@ def test_add_score_parser_with_invalid_src():
     add_score_parser(subparsers)  # Add the `score` subcommand to the parser
 
     # Simulate command-line input
-    args1 = parser.parse_args(
+    args = parser.parse_args(
         [
             "score",
             "--vcf",
@@ -111,8 +108,6 @@ def test_add_score_parser_with_invalid_src():
             "50000",
             "--win-step",
             "10000",
-            "--num-src",
-            "2",  # Expecting 2 populations
             "--w",
             "0.3",
             "--x",
@@ -127,46 +122,9 @@ def test_add_score_parser_with_invalid_src():
         ]
     )
 
-    args2 = parser.parse_args(
-        [
-            "score",
-            "--vcf",
-            "tests/data/example.vcf",
-            "--chr-name",
-            "chr1",
-            "--ref",
-            "tests/data/example.ref.ind.list",
-            "--tgt",
-            "tests/data/example.tgt.ind.list",
-            "--src",
-            "tests/data/example.src.ind.list",
-            "--win-len",
-            "50000",
-            "--win-step",
-            "10000",
-            "--num-src",
-            "2",  # Expecting 2 populations
-            "--w",
-            "0.3",
-            "--x",
-            "0.5",
-            "--y",
-            "=0.1",
-            "--output",
-            "output/results.tsv",
-            "--stat",
-            "U",
-        ]
-    )
-
     # Trigger _run_score to validate the arguments and raise ValueError
-    with pytest.raises(
-        ValueError, match=r"The number of populations in the file .* does not match .*"
-    ):
-        _run_score(args1)
-
     with pytest.raises(ValueError, match=r"The length of y .* does not match .*"):
-        _run_score(args2)
+        _run_score(args)
 
 
 def test_parse_y_thresholds_valid():
