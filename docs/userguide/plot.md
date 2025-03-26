@@ -49,4 +49,4 @@ A file ending with `.intersection.tsv` (e.g., [1KG.nea_den.chr9.example.both.U.v
 
 The resulting plot is shown below:
 
-![example](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U.vs.Q95.png)
+![example](1KG.nea_den.chr9.example.both.U.vs.Q95.png)
