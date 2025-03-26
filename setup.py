@@ -31,7 +31,7 @@ with open(os.path.join(HERE, "README.md")) as fid:
 # This call to setup() does all the work
 setup(
     name="sai",
-    python_requires=">=3.9",
+    python_requires="==3.9.19",
     version="1.0.0",
     description="A Python Package for Statistics for Adaptive Introgression",
     long_description=README,

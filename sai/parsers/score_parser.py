@@ -73,16 +73,11 @@ def _run_score(args: argparse.Namespace) -> None:
         If the length of `args.y` does not match the expected number of source populations (`args.num_src`),
         or if other input parameters do not meet expected conditions.
     """
-    if len(args.y) != args.num_src:
-        raise ValueError(
-            f"The length of y ({len(args.y)}) does not match the expected number of source populations (num_src = {args.num_src})."
-        )
-
     src_samples = parse_ind_file(args.src)
-    if len(src_samples.keys()) != args.num_src:
+    num_src = len(src_samples.keys())
+    if len(args.y) != num_src:
         raise ValueError(
-            f"The number of populations in the file {args.src} specified by `--src` "
-            f"does not match the expected number of source populations (num_src = {args.num_src})."
+            f"The length of y ({len(args.y)}) does not match the number of source populations ({num_src}) found in {args.src}."
         )
 
     score(
@@ -93,7 +88,7 @@ def _run_score(args: argparse.Namespace) -> None:
         src_ind_file=args.src,
         win_len=args.win_len,
         win_step=args.win_step,
-        num_src=args.num_src,
+        num_src=num_src,
         anc_allele_file=args.anc_alleles,
         w=args.w,
         x=args.x,
@@ -211,51 +206,45 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Step size in base pairs between consecutive windows. Default: 10,000.",
     )
     parser.add_argument(
-        "--num-src",
-        dest="num_src",
-        type=positive_int,
-        default=1,
-        help="Number of source populations to include. Default: 1.",
-    )
-    parser.add_argument(
         "--anc-alleles",
         dest="anc_alleles",
         type=existed_file,
         default=None,
-        help="Path to the BED file with ancestral allele information. Default: None.",
+        help="Path to the BED file with ancestral allele information. If ancestral allele information is not provided, allele frequencies will be calculated based on the major allele in the source population for each variant. Default: None.",
     )
     parser.add_argument(
         "--w",
         type=between_zero_and_one,
-        required=True,
-        help="Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis.",
+        default=0.01,
+        help="Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01.",
     )
     parser.add_argument(
         "--x",
         type=between_zero_and_one,
-        required=True,
-        help="Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis.",
+        default=0.9,
+        help="Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9.",
     )
     parser.add_argument(
         "--y",
         type=_parse_y_thresholds,
         nargs="+",
-        required=True,
+        default=[("=", 1.0)],
         help="List of allele frequency conditions for the source populations. "
         "Each value must be in the form =X, >X, <X, >=X, or <=X "
         "(e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2). "
-        "The number of values must match the number of source populations.",
+        "The number of values must match the number of source populations in the file specified by `--src`; "
+        "the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1",
     )
     parser.add_argument(
         "--output",
         type=str,
         required=True,
-        help="Output file path for saving processed feature vectors.",
+        help="Output file path for saving results.",
     )
     parser.add_argument(
         "--stat",
         type=validate_stat_type,
         required=True,
-        help="Type of statistic to compute: U or QXX, where 'XX' represents the quantile in percentage.",
+        help="Type of statistic to compute: U or QXX, where 'XX' represents the quantile in percentage (e.g., `Q90`, `Q95`).",
     )
     parser.set_defaults(runner=_run_score)

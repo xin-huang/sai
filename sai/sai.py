@@ -105,7 +105,7 @@ def score(
         num_src=num_src,
     )
 
-    header = f"Chrom\tStart\tEnd\tRef\tTgt\tSrc\tN(SNP)\t{stat_type}\tCandidate\n"
+    header = f"Chrom\tStart\tEnd\tRef\tTgt\tSrc\tN(Variants)\t{stat_type}\tCandidate\n"
 
     directory = os.path.dirname(output_file)
     if directory:

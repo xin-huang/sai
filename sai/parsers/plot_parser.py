@@ -84,7 +84,7 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         "--output",
         type=str,
         required=True,
-        help="Path to save the output plot file.",
+        help="Path to save the output plot file. The format depends on the file extension (e.g., `.png`, `.pdf`).",
     )
     parser.add_argument(
         "--xlabel",
@@ -108,13 +108,13 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         "--figsize-x",
         type=positive_number,
         default=6,
-        help="Width of the figure. Default: 6.",
+        help="Width of the figure (in inches). Default: 6.",
     )
     parser.add_argument(
         "--figsize-y",
         type=positive_number,
         default=6,
-        help="Height of the figure. Default: 6.",
+        help="Height of the figure (in inches). Default: 6.",
     )
     parser.add_argument(
         "--dpi",
@@ -140,7 +140,7 @@ def add_plot_parser(subparsers: argparse.ArgumentParser) -> None:
         dest="marker_color",
         type=str,
         default="blue",
-        help="Color of the markers. See matplotlib.pyplot.scatter. Default: blue",
+        help="Color of the markers. See matplotlib.pyplot.scatter. Default: blue.",
     )
     parser.add_argument(
         "--marker-style",
