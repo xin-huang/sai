@@ -16,8 +16,6 @@ plugins:
         python:
           rendering:
             show_source: true
-      watch:
-        - sai
 markdown_extensions:
   - extra
   - tables
