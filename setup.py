@@ -48,6 +48,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        "matplotlib==3.9.1",
         "natsort==8.4.0",
         "numpy==1.26.4",
         "pandas==2.2.1",
