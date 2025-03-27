@@ -245,6 +245,6 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         "--stat",
         type=validate_stat_type,
         required=True,
-        help="Type of statistic to compute: U or QXX, where 'XX' represents the quantile in percentage (e.g., `Q90`, `Q95`).",
+        help="Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., `Q90`, `Q95`).",
     )
     parser.set_defaults(runner=_run_score)

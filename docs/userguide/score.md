@@ -25,7 +25,7 @@ This will show information for each argument:
 | --x           | Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9. |
 | --y           | List of allele frequency conditions for the source populations. Each value must be in the form =X, >X, <X, >=X, or <=X (e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2). The number of values must match the number of source populations in the file specified by `--src`; the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1. |
 | --output      | Output file path for saving results. |
-| --stat        | Type of statistic to compute: U or QXX, where 'XX' represents the quantile in percentage (e.g., `Q90`, `Q95`). |
+| --stat        | Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., `Q90`, `Q95`). |
 
 ## Input files
 
@@ -70,15 +70,15 @@ Each row in the output file corresponds to a genomic window, summarizing the res
 | Ref   | Reference population. |
 | Tgt   | Target population. |
 | Src   | Source population. |
-| N(Variants) | Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele does not match either the reference nor alternative allele in the VCF file are also excluded. |
-| U or QXX | Number of uniquely shared sites or the XXth quantile in this window. |
-| Candidate | Variant(s) (`chrom:pos`) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth quantile within this window. |
+| N(Variants) | Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differs from both the reference and alternative allele in the VCF file are also excluded. |
+| U or QXX | Number of uniquely shared sites or the XXth percentile in this window. |
+| Candidate | Variant(s) (`chrom:pos`) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth percentile within this window. |
 
 ## Examples
 
-The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region `chr9:16400000-16900000` from [the 1000 Genomes Project](https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/). The Neanderthal genome was obtained from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/), and the Denisovan genome from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/). The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed populations (ACB and ASW), as well as all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).
+The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region `chr9:16400000-16900000` from [the 1000 Genomes Project](https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/). The Neanderthal genome was obtained from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/), and the Denisovan genome from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/). The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).
 
-To detect introgressed variants from **both Neanderthals and Denisovans**, we can use the following command:
+To detect adaptively introgressed variants from **both Neanderthals and Denisovans**, we can use the following command:
 
 ```
 sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
@@ -109,7 +109,7 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
 
 The `--x` argument is not needed when calculating the Q statistic. If provided, it will be ignored. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv).
 
-To detect introgressed variants from **Neanderthal introgression only**, we can use:
+To detect adaptively introgressed variants from **Neanderthal introgression only**, we can use:
 
 ```
 sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
@@ -124,7 +124,7 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
 
 Here, we set `--y =1 =0` to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv).
 
-To detect introgressed variants from **Denisovan introgression only**, we can use:
+To detect adaptively introgressed variants from **Denisovan introgression only**, we can use:
 
 ```
 sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
