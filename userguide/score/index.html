@@ -760,7 +760,7 @@ DEN Denisova
 </tr>
 <tr>
 <td>N(Variants)</td>
-<td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differs from both the reference and alternative allele in the VCF file are also excluded.</td>
+<td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differ from both the reference and alternative allele in the VCF file are also excluded.</td>
 </tr>
 <tr>
 <td>U or QXX</td>
@@ -768,7 +768,7 @@ DEN Denisova
 </tr>
 <tr>
 <td>Candidate</td>
-<td>Variant(s) (<code>chrom:pos</code>) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth percentile within this window.</td>
+<td>Variant(s) (<code>chrom:pos</code>) that meet the specified condition. For the U statistic, this refers to variant(s) whose allele frequency in the reference population is below a specified threshold, allele frequency in the target population exceeds a specified threshold, and allele frequency in the source population meets a defined condition (e.g., fixed). For the Q statistic, this refers to variant(s) that satisfy the following three conditions: (1) the allele frequency in the reference population is below a specified threshold; (2) the allele frequency in the source population meets a defined condition (e.g., fixed); and (3) among all variants meeting (1) and (2), the allele frequency in the target population is greater than or equal to a specified percentile (e.g., the 95th percentile) within this subset of variants in the window.</td>
 </tr>
 </tbody>
 </table>
