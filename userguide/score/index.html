@@ -551,7 +551,7 @@
 </tr>
 <tr>
 <td>--stat</td>
-<td>Type of statistic to compute: U or QXX, where 'XX' represents the quantile in percentage (e.g., <code>Q90</code>, <code>Q95</code>).</td>
+<td>Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., <code>Q90</code>, <code>Q95</code>).</td>
 </tr>
 </tbody>
 </table>
@@ -760,21 +760,21 @@ DEN Denisova
 </tr>
 <tr>
 <td>N(Variants)</td>
-<td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele does not match either the reference nor alternative allele in the VCF file are also excluded.</td>
+<td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differs from both the reference and alternative allele in the VCF file are also excluded.</td>
 </tr>
 <tr>
 <td>U or QXX</td>
-<td>Number of uniquely shared sites or the XXth quantile in this window.</td>
+<td>Number of uniquely shared sites or the XXth percentile in this window.</td>
 </tr>
 <tr>
 <td>Candidate</td>
-<td>Variant(s) (<code>chrom:pos</code>) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth quantile within this window.</td>
+<td>Variant(s) (<code>chrom:pos</code>) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth percentile within this window.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="examples">Examples</h2>
-<p>The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400000-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed populations (ACB and ASW), as well as all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
-<p>To detect introgressed variants from <strong>both Neanderthals and Denisovans</strong>, we can use the following command:</p>
+<p>The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400000-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
+<p>To detect adaptively introgressed variants from <strong>both Neanderthals and Denisovans</strong>, we can use the following command:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
@@ -799,7 +799,7 @@ In this example, the <code>--w</code>, <code>--x</code>, and <code>--y</code> ar
 </code></pre></div>
 
 <p>The <code>--x</code> argument is not needed when calculating the Q statistic. If provided, it will be ignored. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv">here</a>.</p>
-<p>To detect introgressed variants from <strong>Neanderthal introgression only</strong>, we can use:</p>
+<p>To detect adaptively introgressed variants from <strong>Neanderthal introgression only</strong>, we can use:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
@@ -811,7 +811,7 @@ In this example, the <code>--w</code>, <code>--x</code>, and <code>--y</code> ar
 </code></pre></div>
 
 <p>Here, we set <code>--y =1 =0</code> to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv">here</a>.</p>
-<p>To detect introgressed variants from <strong>Denisovan introgression only</strong>, we can use:</p>
+<p>To detect adaptively introgressed variants from <strong>Denisovan introgression only</strong>, we can use:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
