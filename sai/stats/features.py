@@ -39,10 +39,7 @@ def calc_freq(gts: np.ndarray, ploidy: int = 1) -> np.ndarray:
     np.ndarray
         An array of allele frequencies for each locus.
     """
-    if ploidy == 1:
-        return np.mean(gts, axis=1)
-    else:
-        return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
+    return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
 
 
 def compute_matching_loci(
