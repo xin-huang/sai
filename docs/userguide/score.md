@@ -70,9 +70,9 @@ Each row in the output file corresponds to a genomic window, summarizing the res
 | Ref   | Reference population. |
 | Tgt   | Target population. |
 | Src   | Source population. |
-| N(Variants) | Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differs from both the reference and alternative allele in the VCF file are also excluded. |
+| N(Variants) | Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differ from both the reference and alternative allele in the VCF file are also excluded. |
 | U or QXX | Number of uniquely shared sites or the XXth percentile in this window. |
-| Candidate | Variant(s) (`chrom:pos`) that meet the specified condition. For the Q statistic, this refers to variant(s) whose allele frequency in the target population is greater than or equal to the XXth percentile within this window. |
+| Candidate | Variant(s) (`chrom:pos`) that meet the specified condition. For the U statistic, this refers to variant(s) whose allele frequency in the reference population is below a specified threshold, allele frequency in the target population exceeds a specified threshold, and allele frequency in the source population meets a defined condition (e.g., fixed). For the Q statistic, this refers to variant(s) that satisfy the following three conditions: (1) the allele frequency in the reference population is below a specified threshold; (2) the allele frequency in the source population meets a defined condition (e.g., fixed); and (3) among all variants meeting (1) and (2), the allele frequency in the target population is greater than or equal to a specified percentile (e.g., the 95th percentile) within this subset of variants in the window. |
 
 ## Examples
 
