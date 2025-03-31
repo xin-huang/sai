@@ -42,7 +42,10 @@ def calc_freq(gts: np.ndarray, ploidy: int = 1) -> np.ndarray:
     np.ndarray
         An array of allele frequencies for each locus.
     """
-    return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
+    if ploidy == 1:
+        return np.mean(gts, axis=1)
+    else:
+        return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
 
 
 def compute_matching_loci(
@@ -1392,8 +1395,8 @@ def tajimas_d(gts: np.ndarray, ploidy: int = 1) -> float:
     """
     Compute Tajima's D statistic for a given genotype matrix.
 
-    The formula for Tajima's D is:
     D = (θπ - θW) / sqrt(Var(θπ - θW))
+    Formulae for parameters from Tajima 1989.
 
     Parameters
     ----------
@@ -1407,15 +1410,34 @@ def tajimas_d(gts: np.ndarray, ploidy: int = 1) -> float:
     Returns
     -------
     float
-        Tajima's D statistic, which compares the two estimators of genetic diversity: θπ and θW.
-        A positive value suggests balancing selection or population expansion, while a negative value suggests
-        population contraction or purifying selection.
+        Tajima's D statistic
     """
     theta_pi_val = theta_pi(gts, ploidy=ploidy)
     theta_W_val = theta_W(gts, ploidy=ploidy)
-    numerator = theta_pi_val - theta_W_val
-    denominator = np.std(numerator)
-    result = numerator / denominator
+    S = num_segregating_sites(gts)
+
+    num_snps, individuals = gts.shape
+    a1 = sum(1 / i for i in range(1, individuals + 1))
+    a2 = sum(1 / (i**2) for i in range(1, individuals + 1))
+
+    b1 = (individuals + 1) / (3 * (individuals - 1))
+    b2 = (2 * (individuals**2 + individuals + 3)) / (
+        9 * individuals * (individuals - 1)
+    )
+
+    c1 = b1 - (1 / a1)
+    c2 = b2 - ((individuals + 2) / (a1**2 * individuals)) + a2 / (a1**2)
+
+    e1 = c1 / a1
+    e2 = c2 / (a1**2 + a2)
+
+    denominator = np.sqrt(e1 * S + e2 * S * (S - 1))
+
+    if denominator == 0:
+        return float("nan")
+
+    result = (theta_pi_val - theta_W_val) / denominator
+
     return result
 
 
