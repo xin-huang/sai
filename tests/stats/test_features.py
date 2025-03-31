@@ -20,10 +20,21 @@
 
 import pytest
 import numpy as np
+from typing import Union
 from sai.stats.features import calc_u
 from sai.stats.features import calc_q
 from sai.stats.features import calc_freq
 from sai.stats.features import compute_matching_loci
+# MaLAdapt features
+from sai.stats.features import heterozygosity
+from sai.stats.features import num_segregating_sites
+from sai.stats.features import compute_ABBA_BABA_D
+from sai.stats.features import theta_W
+from sai.stats.features import compute_fd
+from sai.stats.features import theta_pi
+# additional features
+from sai.stats.features import compute_D_plus
+
 
 
 def test_calc_u_basic():
@@ -406,3 +417,145 @@ def test_compute_matching_loci():
             ploidy,
             anc_allele_available,
         )
+
+
+# MaLAdapt features
+
+def test_heterozygosity():
+    # Given genotype array
+    gts = np.array([
+        [0, 0, 0],  # Locus 1: all 0, no heterozygosity (H=0)
+        [1, 1, 1],  # Locus 2: all 1, no heterozygosity (H=0)
+        [1, 0, 1],  # Locus 3: p=2/3, H = 2*(2/3)*(1/3) = 4/9 ≈ 0.444
+    ])
+
+    # Expected heterozygosity:
+    # (0 + 0 + 0.444) / 3 = 0.148 (approx)
+    expected_het = (0 + 0 + (2 * (2/3) * (1/3))) / 3
+    
+    assert np.isclose(heterozygosity(gts, ploidy=1), expected_het, atol=1e-6)
+
+
+
+
+def test_num_segregating_sites():
+    # First genotype matrix (original test case)
+    gts1 = np.array([
+        [0, 0, 0],  # Locus 1: Fixed at 0 (not segregating)
+        [1, 1, 1],  # Locus 2: Fixed at 1 (not segregating)
+        [1, 0, 1]   # Locus 3: Segregating (p=2/3)
+    ])
+    
+    expected_num_sites1 = 1
+    expected_freqs1 = np.array([2/3])
+    
+    assert num_segregating_sites(gts1) == expected_num_sites1
+    
+    num_sites1, freqs1 = num_segregating_sites(gts1, return_frequencies=True)
+    assert num_sites1 == expected_num_sites1
+    assert np.allclose(freqs1, expected_freqs1, atol=1e-6)
+
+    # Second genotype matrix (new test case)
+    gts2 = np.array([
+        [1, 1, 1],  # Locus 1: Fixed at 1 (not segregating)
+        [1, 0, 0],  # Locus 2: Segregating (p=1/3)
+        [0, 1, 0]   # Locus 3: Segregating (p=1/3)
+    ])
+    
+    expected_num_sites2 = 2
+    expected_freqs2 = np.array([1/3, 1/3])
+    
+    assert num_segregating_sites(gts2) == expected_num_sites2
+    
+    num_sites2, freqs2 = num_segregating_sites(gts2, return_frequencies=True)
+    assert num_sites2 == expected_num_sites2
+    assert np.allclose(freqs2, expected_freqs2, atol=1e-6)
+
+
+def test_compute_ABBA_BABA_D():
+    # test input
+    src_gts = np.array([[1, 1], [1, 1], [1, 1]])  # Source population
+    ref_gts = np.array([[0, 1], [1, 0], [0, 1]])  # Reference population
+    tgt_gts = np.array([[1, 0], [0, 1], [1, 0]])  # Target population
+    out_gts = None  # No outgroup provided
+
+    # Call the function with the test input
+    result = compute_ABBA_BABA_D(src_gts, ref_gts, tgt_gts, out_gts)
+
+    # Check the result
+    expected_result = 0  
+    assert np.isclose(result, expected_result), f"Expected {expected_result}, but got {result}"
+
+
+def test_compute_fd():
+    # test input
+    src_gts = np.array([[1, 1], [1, 1], [1, 1]])  # Source population
+    ref_gts = np.array([[0, 1], [1, 0], [0, 1]])  # Reference population
+    tgt_gts = np.array([[1, 0], [0, 1], [1, 0]])  # Target population
+    out_gts = None  # No outgroup provided
+
+    # Call the function with the test input
+    result = compute_fd(src_gts, ref_gts, tgt_gts, out_gts)
+
+    # Check the result
+    expected_result = 0  
+    assert np.isclose(result, expected_result), f"Expected {expected_result}, but got {result}"
+
+
+
+def test_theta_W():
+    # test matrices have input shape 3, so third harmonic number
+    third_harmonic = 1+(1/2)+(1/3)
+
+    # First genotype matrix 
+    gts1 = np.array([
+        [0, 0, 0],  # Locus 1: Fixed at 0 (not segregating)
+        [1, 1, 1],  # Locus 2: Fixed at 1 (not segregating)
+        [1, 0, 1]   # Locus 3: Segregating (p=2/3)
+    ])
+    
+    expected_num_sites1 = 1
+    expected_theta_W1 = expected_num_sites1 / third_harmonic
+    
+    assert np.allclose(theta_W(gts1), expected_theta_W1, atol=1e-6)
+
+    # Second genotype matrix (new test case)
+    gts2 = np.array([
+        [1, 1, 1],  # Locus 1: Fixed at 1 (not segregating)
+        [1, 0, 0],  # Locus 2: Segregating (p=1/3)
+        [0, 1, 0]   # Locus 3: Segregating (p=1/3)
+    ])
+    
+    expected_num_sites2 = 2
+    expected_theta_W2 = expected_num_sites2 / third_harmonic
+    
+    assert np.allclose(theta_W(gts2), expected_theta_W2, atol=1e-6)
+
+
+def test_theta_pi():
+    expected_result = 2 + (1/3)
+    gts = np.array([
+    [0, 1, 1, 0],  # Site 1: Segregating
+    [1, 1, 1, 0],  # Site 2: Segregating
+    [0, 0, 0, 0],  # Site 3: Monomorphic (not segregating)
+    [1, 0, 1, 1],  # Site 4: Segregating
+    [1, 1, 0, 0]   # Site 5: Segregating
+    ])
+
+    assert np.allclose(theta_pi(gts), expected_result, atol=1e-6)
+
+
+def test_compute_D_plus():
+    # test input
+    src_gts = np.array([[0, 0], [0, 0], [1, 1]])  # Source population
+    ref_gts = np.array([[1, 0], [0, 1] , [0, 1]])  # Reference population
+    tgt_gts = np.array([[0, 1], [1, 0], [1, 0]])  # Target population
+    out_gts = None  # No outgroup provided
+
+    # Call the function with the test input
+    result = compute_D_plus(src_gts, ref_gts, tgt_gts, out_gts)
+
+    # Check the result
+    expected_result = 0  
+    assert np.isclose(result, expected_result), f"Expected {expected_result}, but got {result}"
+
