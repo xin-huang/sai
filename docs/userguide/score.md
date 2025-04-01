@@ -20,7 +20,7 @@ This will show information for each argument:
 | --src         | Path to the file with source population identifiers. |
 | --win-len     | Length of each genomic window in base pairs. Default: 50,000. |
 | --win-step    | Step size in base pairs between consecutive windows. Default: 10,000. |
-| --anc-alleles | Path to the BED file with ancestral allele information. If ancestral allele information is not provided, allele frequencies will be calculated based on the major allele in the source population for each variant. Default: None. |
+| --anc-alleles | Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None. |
 | --w           | Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01. |
 | --x           | Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9. |
 | --y           | List of allele frequency conditions for the source populations. Each value must be in the form =X, >X, <X, >=X, or <=X (e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2). The number of values must match the number of source populations in the file specified by `--src`; the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1. |

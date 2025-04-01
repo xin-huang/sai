@@ -210,7 +210,7 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         dest="anc_alleles",
         type=existed_file,
         default=None,
-        help="Path to the BED file with ancestral allele information. If ancestral allele information is not provided, allele frequencies will be calculated based on the major allele in the source population for each variant. Default: None.",
+        help="Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None.",
     )
     parser.add_argument(
         "--w",
