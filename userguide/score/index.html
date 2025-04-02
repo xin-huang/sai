@@ -538,10 +538,6 @@
 <td>Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01.</td>
 </tr>
 <tr>
-<td>--x</td>
-<td>Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9.</td>
-</tr>
-<tr>
 <td>--y</td>
 <td>List of allele frequency conditions for the source populations. Each value must be in the form =X, &gt;X, <X, >=X, or &lt;=X (e.g., =0.7, &gt;0.8, &lt;0.1, &gt;=0.5, &lt;=0.2). The number of values must match the number of source populations in the file specified by <code>--src</code>; the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1.</td>
 </tr>
@@ -551,7 +547,7 @@
 </tr>
 <tr>
 <td>--stat</td>
-<td>Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., <code>Q90</code>, <code>Q95</code>).</td>
+<td>Type of statistic to compute: UXX or QXX, where XX is a percentage-like index indicating a threshold in the target population. For example, <code>U50</code> means the allele frequency is greater than 0.5, and <code>Q95</code> means the allele frequency is greater than or equal to the 95th percentile among sites meeting the specified conditions.</td>
 </tr>
 </tbody>
 </table>
@@ -575,7 +571,7 @@ DEN Denisova
 <th>Tgt</th>
 <th>Src</th>
 <th>N(Variants)</th>
-<th>U</th>
+<th>U50</th>
 <th>Candidate</th>
 </tr>
 </thead>
@@ -763,8 +759,8 @@ DEN Denisova
 <td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differ from both the reference and alternative allele in the VCF file are also excluded.</td>
 </tr>
 <tr>
-<td>U or QXX</td>
-<td>Number of uniquely shared sites or the XXth percentile in this window.</td>
+<td>UXX or QXX</td>
+<td>Number of uniquely shared sites or the quantile statistic in this window.</td>
 </tr>
 <tr>
 <td>Candidate</td>
@@ -780,14 +776,14 @@ DEN Denisova
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =1 =1 \
+          --chr-name 9 --stat U50 --w 0.01 --y =1 =1 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv
 </code></pre></div>
 
 <p>We provide a BED file to specify the ancestral allele for each variant, based on alignments from <a href="https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/">Ensembl</a>.
-In this example, the <code>--w</code>, <code>--x</code>, and <code>--y</code> arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population, greater than 0.5 in the target population, and fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv">here</a>.</p>
-<p>To estimate the Q95 statistic for the same data, simply change <code>--stat U</code> to <code>--stat Q95</code>:</p>
+In this example, the <code>--w</code>, <code>--x</code>, and <code>--y</code> arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population, greater than 0.5 in the target population, and fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv">here</a>.</p>
+<p>To estimate the Q95 statistic for the same data, simply change <code>--stat U50</code> to <code>--stat Q95</code>:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
@@ -798,31 +794,31 @@ In this example, the <code>--w</code>, <code>--x</code>, and <code>--y</code> ar
           --output examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv
 </code></pre></div>
 
-<p>The <code>--x</code> argument is not needed when calculating the Q statistic. If provided, it will be ignored. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv">here</a>.</p>
+<p>The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv">here</a>.</p>
 <p>To detect adaptively introgressed variants from <strong>Neanderthal introgression only</strong>, we can use:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =1 =0 \
+          --chr-name 9 --stat U50 --w 0.01 --y =1 =0 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv
 </code></pre></div>
 
-<p>Here, we set <code>--y =1 =0</code> to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv">here</a>.</p>
+<p>Here, we set <code>--y =1 =0</code> to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv">here</a>.</p>
 <p>To detect adaptively introgressed variants from <strong>Denisovan introgression only</strong>, we can use:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =0 =1 \
+          --chr-name 9 --stat U50 --w 0.01 --y =0 =1 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.den.specific.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv
 </code></pre></div>
 
-<p>In this case, <code>--y =0 =1</code> requires that the variant be fixed in the Denisovan individual and absent in the Neanderthal, thereby identifying variants potentially introgressed from Denisovans only. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.den.specific.U.scores.tsv">here</a>.</p>
+<p>In this case, <code>--y =0 =1</code> requires that the variant be fixed in the Denisovan individual and absent in the Neanderthal, thereby identifying variants potentially introgressed from Denisovans only. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv">here</a>.</p>
 <p>Any number of source populations is supported, including one, two, or more. However, note that the order of values provided to <code>--y</code> must match the order of source populations as specified in the file given by <code>--src</code>. For example, in <code>examples/data/1KG.nea_den.samples.txt</code>, the first source population is Neanderthal and the second is Denisovan. Therefore, <code>--y =1 =0</code> specifies that the variant must be fixed in Neanderthals and absent in Denisovans, while <code>--y =0 =1</code> specifies the reverse.</p>
 <p>Providing <code>--y</code> values in the wrong order (e.g., reversing the values without changing the order of the populations in <code>--src</code>) will result in incorrect interpretation of source-specific introgression signals.</p>
 

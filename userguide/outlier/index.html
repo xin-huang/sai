@@ -521,12 +521,12 @@
 <p>The output file has the same format as that of the <code>score</code> command.</p>
 <h2 id="examples">Examples</h2>
 <p>To extract outliers from the output of the previous score example, we can use the following command:</p>
-<div class="codehilite"><pre><span></span><code>sai outlier --score examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv \
-            --output examples/results/1KG.nea_den.chr9.example.both.U.outliers.tsv \
+<div class="codehilite"><pre><span></span><code>sai outlier --score examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv \
+            --output examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv \
             --quantile 0.99
 </code></pre></div>
 
-<p>This identifies candidate introgressed regions from both Neanderthals and Denisovans by selecting windows with U statistic values above the 0.99 quantile in the <code>score</code> command output. The result can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U.outliers.tsv">here</a>.</p>
+<p>This identifies candidate introgressed regions from both Neanderthals and Denisovans by selecting windows with U statistic values above the 0.99 quantile in the <code>score</code> command output. The result can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv">here</a>.</p>
 
 
 
