@@ -24,6 +24,7 @@ from sai.parsers.argument_validation import positive_int
 from sai.parsers.argument_validation import positive_number
 from sai.parsers.argument_validation import between_zero_and_one
 from sai.parsers.argument_validation import existed_file
+from sai.parsers.argument_validation import validate_stat_type
 
 
 def test_positive_int():
@@ -97,3 +98,36 @@ def test_existed_file(tmp_path):
         argparse.ArgumentTypeError, match="non_existent_file is not found"
     ):
         existed_file("non_existent_file")
+
+
+def test_valid_inputs():
+    assert validate_stat_type("U50") == "U50"
+    assert validate_stat_type("Q05") == "Q05"
+    assert validate_stat_type("Q95") == "Q95"
+    assert validate_stat_type("Q99") == "Q99"
+
+
+def test_invalid_inputs():
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("U")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("Q")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("Q5")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("U100")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("Q100")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("X50")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("Qabc")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        validate_stat_type("")

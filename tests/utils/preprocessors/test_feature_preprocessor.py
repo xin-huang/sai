@@ -29,11 +29,21 @@ def feature_preprocessor():
     # Create an instance of FeaturePreprocessor with thresholds and temporary output file
     return FeaturePreprocessor(
         w=0.3,
-        x=0.5,
         y=[("=", 0.2), ("=", 0.4)],
         output_file="test_output.tsv",
         stat_type="Q95",
     )
+
+
+@pytest.mark.parametrize("invalid_stat_type", ["Uabc", "U", "Q", "U101", "Q0", ""])
+def test_feature_preprocessor_invalid_stat_types(invalid_stat_type):
+    with pytest.raises(ValueError):
+        FeaturePreprocessor(
+            w=0.3,
+            y=[("=", 0.2), ("=", 0.4)],
+            output_file="test_output.tsv",
+            stat_type=invalid_stat_type,
+        )
 
 
 def test_run(feature_preprocessor):
@@ -154,10 +164,9 @@ def test_run_from_file(example_data, tmp_path):
     # Initialize the FeaturePreprocessor with the temporary output file path
     preprocessor = FeaturePreprocessor(
         w=0.3,
-        x=0.5,
         y=[("=", 1)],
         output_file=str(temp_output_file),
-        stat_type="U",
+        stat_type="U50",
     )
 
     # Run the generator and preprocessor

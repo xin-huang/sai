@@ -36,7 +36,6 @@ class FeaturePreprocessor(DataPreprocessor):
     def __init__(
         self,
         w: float,
-        x: float,
         y: list[float],
         output_file: str,
         stat_type: str,
@@ -49,29 +48,39 @@ class FeaturePreprocessor(DataPreprocessor):
         Parameters
         ----------
         w : float
-            Frequency threshold for `calc_u`.
-        x : float
-            Frequency threshold for `calc_u`.
+            Frequency threshold for `calc_u` and `calc_q`.
         y : list[float]
             List of frequency thresholds for `calc_u` and `calc_q`.
         output_file : str
             Path to the output file to save processed feature vectors.
         stat_type: str,
             Specifies the type of statistic to compute.
-            - "U" : Compute the U statistic using `calc_u()`.
+            - "UXX" (e.g., "U50", "U90") : Compute the U statistic using `calc_u()`.
             - "QXX" (e.g., "Q95", "Q50") : Compute the Q statistic using `calc_q()`,
-            where "XX" represents the quantile in percentage (e.g., "Q95" → quantile=0.95).
         anc_allele_available: bool, optional
             If True, ancestral allele information is available.
             If False, ancestral allele information is unavailable.
             Default is False.
+
+        Raises
+        ------
+        ValueError
+            If `stat_type` is not in a valid format. Must be either: 'UXX' or 'QXX'.
         """
         self.w = w
-        self.x = x
         self.y = y
         self.output_file = output_file
-        self.stat_type = stat_type
         self.anc_allele_available = anc_allele_available
+        if not (
+            len(stat_type) == 3
+            and stat_type[0] in {"U", "Q"}
+            and stat_type[1:].isdigit()
+        ):
+            raise ValueError(
+                f"Invalid stat_type format: {stat_type}. Expected format 'UXX' or 'QXX' (e.g., 'U50' or 'Q95')."
+            )
+        self.stat_prefix = stat_type[0]
+        self.threshold = int(stat_type[1:]) / 100
 
     def run(
         self,
@@ -138,26 +147,19 @@ class FeaturePreprocessor(DataPreprocessor):
         ):
             items["statistic"] = np.nan
             items["candidates"] = np.array([])
-        elif self.stat_type == "U":
+        elif self.stat_prefix == "U":
             items["statistic"], items["candidates"] = calc_u(
                 ref_gts=ref_gts,
                 tgt_gts=tgt_gts,
                 src_gts_list=src_gts_list,
                 pos=pos,
                 w=self.w,
-                x=self.x,
+                x=self.threshold,
                 y_list=self.y,
                 ploidy=ploidy,
                 anc_allele_available=self.anc_allele_available,
             )
-        elif self.stat_type.startswith("Q"):
-            try:
-                quantile_value = int(self.stat_type[1:]) / 100
-            except ValueError:
-                raise ValueError(
-                    f"Invalid stat_type format: {self.stat_type}. Expected format 'QXX', e.g., 'Q95'."
-                )
-
+        elif self.stat_prefix == "Q":
             items["statistic"], items["candidates"] = calc_q(
                 ref_gts=ref_gts,
                 tgt_gts=tgt_gts,
@@ -165,7 +167,7 @@ class FeaturePreprocessor(DataPreprocessor):
                 pos=pos,
                 w=self.w,
                 y_list=self.y,
-                quantile=quantile_value,
+                quantile=self.threshold,
                 ploidy=ploidy,
                 anc_allele_available=self.anc_allele_available,
             )
