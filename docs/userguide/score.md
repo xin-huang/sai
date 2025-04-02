@@ -22,10 +22,9 @@ This will show information for each argument:
 | --win-step    | Step size in base pairs between consecutive windows. Default: 10,000. |
 | --anc-alleles | Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None. |
 | --w           | Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01. |
-| --x           | Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9. |
 | --y           | List of allele frequency conditions for the source populations. Each value must be in the form =X, >X, <X, >=X, or <=X (e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2). The number of values must match the number of source populations in the file specified by `--src`; the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1. |
 | --output      | Output file path for saving results. |
-| --stat        | Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., `Q90`, `Q95`). |
+| --stat        | Type of statistic to compute: UXX or QXX, where XX is a percentage-like index indicating a threshold in the target population. For example, `U50` means the allele frequency is greater than 0.5, and `Q95` means the allele frequency is greater than or equal to the 95th percentile among sites meeting the specified conditions. |
 
 ## Input files
 
@@ -44,7 +43,7 @@ This file specifies the individuals in the source populations. In this example, 
 
 An example output of the U statistic calculation is shown below.
 
-| Chrom | Start | End | Ref | Tgt | Src | N(Variants) | U | Candidate |
+| Chrom | Start | End | Ref | Tgt | Src | N(Variants) | U50 | Candidate |
 | - | - | - | - | - | - | - | - | - |
 | 9 | 16400001 | 16440000 | AFR+EAS | EUR | NEA,DEN | 1082 | 0 | NA |
 | 9 | 16440001 | 16480000 | AFR+EAS | EUR | NEA,DEN | 983  | 0 | NA | 
@@ -71,7 +70,7 @@ Each row in the output file corresponds to a genomic window, summarizing the res
 | Tgt   | Target population. |
 | Src   | Source population. |
 | N(Variants) | Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differ from both the reference and alternative allele in the VCF file are also excluded. |
-| U or QXX | Number of uniquely shared sites or the XXth percentile in this window. |
+| UXX or QXX | Number of uniquely shared sites or the quantile statistic in this window. |
 | Candidate | Variant(s) (`chrom:pos`) that meet the specified condition. For the U statistic, this refers to variant(s) whose allele frequency in the reference population is below a specified threshold, allele frequency in the target population exceeds a specified threshold, and allele frequency in the source population meets a defined condition (e.g., fixed). For the Q statistic, this refers to variant(s) that satisfy the following three conditions: (1) the allele frequency in the reference population is below a specified threshold; (2) the allele frequency in the source population meets a defined condition (e.g., fixed); and (3) among all variants meeting (1) and (2), the allele frequency in the target population is greater than or equal to a specified percentile (e.g., the 95th percentile) within this subset of variants in the window. |
 
 ## Examples
@@ -86,15 +85,15 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =1 =1 \
+          --chr-name 9 --stat U50 --w 0.01 --y =1 =1 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv
 ```
 
 We provide a BED file to specify the ancestral allele for each variant, based on alignments from [Ensembl](https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/).
-In this example, the `--w`, `--x`, and `--y` arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population, greater than 0.5 in the target population, and fixed (`=1`) in both Neanderthal and Denisovan genomes. The output is shown above and can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv).
+In this example, the `--w`, `--x`, and `--y` arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population, greater than 0.5 in the target population, and fixed (`=1`) in both Neanderthal and Denisovan genomes. The output is shown above and can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv).
 
-To estimate the Q95 statistic for the same data, simply change `--stat U` to `--stat Q95`:
+To estimate the Q95 statistic for the same data, simply change `--stat U50` to `--stat Q95`:
 
 ```
 sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
@@ -107,7 +106,7 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --output examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv
 ``` 
 
-The `--x` argument is not needed when calculating the Q statistic. If provided, it will be ignored. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv).
+The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv).
 
 To detect adaptively introgressed variants from **Neanderthal introgression only**, we can use:
 
@@ -117,12 +116,12 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =1 =0 \
+          --chr-name 9 --stat U50 --w 0.01 --y =1 =0 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv
 ```
 
-Here, we set `--y =1 =0` to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U.scores.tsv).
+Here, we set `--y =1 =0` to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv).
 
 To detect adaptively introgressed variants from **Denisovan introgression only**, we can use:
 
@@ -132,12 +131,12 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --tgt examples/data/1KG.tgt.samples.txt \
           --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U --w 0.01 --x 0.5 --y =0 =1 \
+          --chr-name 9 --stat U50 --w 0.01 --y =0 =1 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.den.specific.U.scores.tsv
+          --output examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv
 ```
 
-In this case, `--y =0 =1` requires that the variant be fixed in the Denisovan individual and absent in the Neanderthal, thereby identifying variants potentially introgressed from Denisovans only. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.den.specific.U.scores.tsv).
+In this case, `--y =0 =1` requires that the variant be fixed in the Denisovan individual and absent in the Neanderthal, thereby identifying variants potentially introgressed from Denisovans only. The output can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv).
 
 Any number of source populations is supported, including one, two, or more. However, note that the order of values provided to `--y` must match the order of source populations as specified in the file given by `--src`. For example, in `examples/data/1KG.nea_den.samples.txt`, the first source population is Neanderthal and the second is Denisovan. Therefore, `--y =1 =0` specifies that the variant must be fixed in Neanderthals and absent in Denisovans, while `--y =0 =1` specifies the reverse.
 

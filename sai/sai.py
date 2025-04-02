@@ -39,7 +39,6 @@ def score(
     num_src: int,
     anc_allele_file: str,
     w: float,
-    x: float,
     y: list[float],
     output_file: str,
     stat_type: str,
@@ -70,8 +69,6 @@ def score(
         Path to the file containing ancestral allele information.
     w : float
         Frequency threshold for calculating feature vectors.
-    x : float
-        Another frequency threshold for calculating feature vectors.
     y : list[float]
         List of frequency thresholds used for various calculations in feature vector processing.
     output_file : str
@@ -97,7 +94,6 @@ def score(
         win_len=win_len,
         win_step=win_step,
         w=w,
-        x=x,
         y=y,
         output_file=output_file,
         stat_type=stat_type,

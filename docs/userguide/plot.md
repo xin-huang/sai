@@ -40,13 +40,13 @@ The output file is a scatter plot showing U versus Q statistic values for each g
 To plot the U statistics versus Q95 statistic values for genomic windows for detecting introgressed variants from both Neanderthals and Denisovans, we can run the following:
 
 ```
-sai plot --u-file examples/results/1KG.nea_den.chr9.example.both.U.scores.tsv \
+sai plot --u-file examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv \
          --q-file examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv \
-         --output examples/results/1KG.nea_den.chr9.example.both.U.vs.Q95.png
+         --output examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.png
 ```
 
-A file ending with `.intersection.tsv` (e.g., [1KG.nea_den.chr9.example.both.U.vs.Q95.intersection.tsv](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U.vs.Q95.intersection.tsv)) is also generated to record the data points used in the plot.
+A file ending with `.intersection.tsv` (e.g., [1KG.nea_den.chr9.example.both.U50.vs.Q95.intersection.tsv](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.intersection.tsv)) is also generated to record the data points used in the plot.
 
 The resulting plot is shown below:
 
-![example](1KG.nea_den.chr9.example.both.U.vs.Q95.png)
+![example](1KG.nea_den.chr9.example.both.U50.vs.Q95.png)

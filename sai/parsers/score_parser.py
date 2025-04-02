@@ -58,8 +58,6 @@ def _run_score(args: argparse.Namespace) -> None:
             Path to the ancestral allele file.
         - w : float
             Allele frequency threshold for the reference group.
-        - x : float
-            Allele frequency threshold for the target group.
         - y : list of float
             List of allele frequency thresholds for each source population. Its length must match `num_src`.
         - output : str
@@ -91,7 +89,6 @@ def _run_score(args: argparse.Namespace) -> None:
         num_src=num_src,
         anc_allele_file=args.anc_alleles,
         w=args.w,
-        x=args.x,
         y=args.y,
         output_file=args.output,
         stat_type=args.stat,
@@ -219,12 +216,6 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01.",
     )
     parser.add_argument(
-        "--x",
-        type=between_zero_and_one,
-        default=0.9,
-        help="Frequency threshold for variants in the target population; only variants with frequencies exceeding this threshold are included in the analysis. This argument is omitted when estimating the Q statistic. Default: 0.9.",
-    )
-    parser.add_argument(
         "--y",
         type=_parse_y_thresholds,
         nargs="+",
@@ -245,6 +236,6 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         "--stat",
         type=validate_stat_type,
         required=True,
-        help="Type of statistic to compute: U or QXX, where 'XX' represents the percentile (e.g., `Q90`, `Q95`).",
+        help="Type of statistic to compute: UXX or QXX, where XX is a percentage-like index indicating a threshold in the target population. For example, `U50` means the allele frequency is greater than 0.5, and `Q95` means the allele frequency is greater than or equal to the 95th percentile among sites meeting the specified conditions.",
     )
     parser.set_defaults(runner=_run_score)

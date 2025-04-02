@@ -42,7 +42,6 @@ class ChunkPreprocessor(DataPreprocessor):
         win_len: int,
         win_step: int,
         w: float,
-        x: float,
         y: list[float],
         output_file: str,
         stat_type: str,
@@ -68,8 +67,6 @@ class ChunkPreprocessor(DataPreprocessor):
             Step size for sliding windows across the genome.
         w : float
             Parameter w for feature vector computation.
-        x : float
-            Parameter x for feature vector computation.
         y : list of float
             List of y parameters for feature vector computation.
         output_file : str
@@ -95,7 +92,6 @@ class ChunkPreprocessor(DataPreprocessor):
 
         self.feature_preprocessor = FeaturePreprocessor(
             w=w,
-            x=x,
             y=y,
             output_file=output_file,
             stat_type=stat_type,

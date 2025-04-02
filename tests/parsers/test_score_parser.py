@@ -55,8 +55,6 @@ def test_add_score_parser(parser):
             "10000",
             "--w",
             "0.3",
-            "--x",
-            "0.5",
             "--y",
             "=0.1",
             "<0.2",
@@ -78,7 +76,6 @@ def test_add_score_parser(parser):
     assert args.win_step == 10000
     assert args.anc_alleles is None
     assert args.w == 0.3
-    assert args.x == 0.5
     assert args.y == [("=", 0.1), ("<", 0.2)]
     assert args.output == "output/results.tsv"
     assert args.stat == "Q95"
@@ -110,15 +107,13 @@ def test_add_score_parser_with_invalid_src():
             "10000",
             "--w",
             "0.3",
-            "--x",
-            "0.5",
             "--y",
             "=0.1",
             "<0.2",
             "--output",
             "output/results.tsv",
             "--stat",
-            "U",
+            "U50",
         ]
     )
 
