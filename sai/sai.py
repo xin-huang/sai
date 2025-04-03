@@ -189,7 +189,7 @@ def plot(
     marker_style: str = "o",
 ) -> None:
     """
-    Reads two outlier files (U and Q), finds common candidate positions, and plots U vs. Q.
+    Reads two score/outlier files (U and Q), finds common candidate positions, and plots U vs. Q.
 
     Parameters
     ----------
@@ -214,23 +214,18 @@ def plot(
     alpha : float, optional
         Transparency level of scatter points (default: 0.6).
     marker_size : float, optional
-        Size of the scatter plot markers (default: 20). See matplotlib.pyplot.scatter.
+        Size of the scatter plot markers (default: 20).
     marker_color : str, optional
-        Color of the markers (default: "blue"). See matplotlib.pyplot.scatter.
+        Color of the markers (default: "blue").
     marker_style : str, optional
-        Shape of the marker, e.g., 'o' for circle, '^' for triangle, 's' for square (default: "o").
-        See matplotlib.pyplot.scatter for available marker styles.
+        Shape of the marker (default: "o").
     """
-
-    # Read input files
     u_data = pd.read_csv(u_file, sep="\t")
     q_data = pd.read_csv(q_file, sep="\t")
 
-    # Identify columns
     u_column = u_data.columns[-2]
     q_column = q_data.columns[-2]
 
-    # Create genomic interval key as `chr:start-end`
     u_data["interval"] = (
         u_data["Chrom"].astype(str)
         + ":"
@@ -246,26 +241,36 @@ def plot(
         + q_data["End"].astype(str)
     )
 
-    # Convert U and Q columns to numeric
     u_data[u_column] = pd.to_numeric(u_data[u_column], errors="coerce")
     q_data[q_column] = pd.to_numeric(q_data[q_column], errors="coerce")
     u_data = u_data.dropna(subset=[u_column])
     q_data = q_data.dropna(subset=[q_column])
 
-    # Convert to dictionary: {interval: value}
     u_interval_dict = {row["interval"]: row[u_column] for _, row in u_data.iterrows()}
     q_interval_dict = {row["interval"]: row[q_column] for _, row in q_data.iterrows()}
+    u_candidate_dict = {
+        row["interval"]: set(str(row["Candidate"]).split(","))
+        for _, row in u_data.iterrows()
+    }
+    q_candidate_dict = {
+        row["interval"]: set(str(row["Candidate"]).split(","))
+        for _, row in q_data.iterrows()
+    }
 
-    # Find intersection of intervals
     common_intervals = set(u_interval_dict.keys()) & set(q_interval_dict.keys())
-
     if not common_intervals:
         raise ValueError(
-            "No common genomic intervals found between U and Q outlier files. The plot will be empty.",
+            "No common genomic intervals found between U and Q score/outlier files."
         )
 
-    # Create DataFrame for intersection and save to file
-    intersection_df = pd.DataFrame(
+    # Helper: get candidate overlap or "."
+    def get_candidate_overlap(interval):
+        u_set = u_candidate_dict.get(interval, set())
+        q_set = q_candidate_dict.get(interval, set())
+        overlap = sorted(u_set & q_set)
+        return ",".join(overlap) if overlap else "NA"
+
+    overlap_df = pd.DataFrame(
         {
             "Chrom": [interval.split(":")[0] for interval in common_intervals],
             "Start": [
@@ -278,20 +283,19 @@ def plot(
             ],
             u_column: [u_interval_dict[c] for c in common_intervals],
             q_column: [q_interval_dict[c] for c in common_intervals],
+            "Overlapping Candidate": [get_candidate_overlap(c) for c in common_intervals],
         }
     )
 
-    # Save intersection data
-    intersection_df_sorted = natsorted_df(intersection_df)
-    intersection_output = os.path.splitext(output)[0] + ".intersection.tsv"
-    intersection_df_sorted.to_csv(intersection_output, sep="\t", index=False)
+    overlap_df_sorted = natsorted_df(overlap_df)
+    overlap_output = os.path.splitext(output)[0] + ".overlap.tsv"
+    pd.DataFrame(overlap_df_sorted).to_csv(overlap_output, sep="\t", index=False)
 
-    # Plot
     plt.figure(figsize=(figsize_x, figsize_y))
     plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
     plt.scatter(
-        x=intersection_df[q_column],
-        y=intersection_df[u_column],
+        x=overlap_df[q_column],
+        y=overlap_df[u_column],
         alpha=alpha,
         s=marker_size,
         c=marker_color,
@@ -305,7 +309,5 @@ def plot(
     plt.ylabel(ylabel)
     plt.title(title)
     plt.grid(alpha=0.5, linestyle="--")
-
-    # Save plot
     plt.savefig(output, dpi=dpi)
     plt.close()
