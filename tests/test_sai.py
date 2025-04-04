@@ -74,7 +74,9 @@ def test_score(example_data, capfd):
     # Read the generated output file and validate contents
     df = pd.read_csv(example_data["output_file"], sep="\t")
 
-    assert df["Q95"].iloc[0] == 0.9, "Unexpected value in 'Q95' column"
+    col_name = [col for col in df.columns if col.startswith("Q95(")][0]
+
+    assert df[col_name].iloc[0] == 0.9, "Unexpected value in 'Q95' column"
 
 
 def test_outlier(example_data):
