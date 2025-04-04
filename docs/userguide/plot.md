@@ -45,8 +45,8 @@ sai plot --u-file examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv 
          --output examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.png
 ```
 
-A file ending with `.overlap.tsv` (e.g., [1KG.nea_den.chr9.example.both.U50.vs.Q95.overlap.tsv](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.overlap.tsv)) is also generated, containing the U and Q values for the overlapping genomic intervals used in the plot, as well as the candidates shared between the two input datasets in these intervals.
+A file ending with `.overlap.tsv` (e.g., [1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.overlap.tsv](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.overlap.tsv)) is also generated, containing the U and Q values for the overlapping genomic intervals used in the plot, as well as the candidates shared between the two input datasets in these intervals.
 
 The resulting plot is shown below:
 
-![example](1KG.nea_den.chr9.example.both.U50.vs.Q95.png)
+![example](1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.png)
