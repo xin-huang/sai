@@ -42,7 +42,7 @@ To plot the U statistics versus Q95 statistic values for genomic windows for det
 ```
 sai plot --u-file examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv \
          --q-file examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv \
-         --output examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.png
+         --output examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.png
 ```
 
 A file ending with `.overlap.tsv` (e.g., [1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.overlap.tsv](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.vs.Q95.scores.overlap.tsv)) is also generated. This file contains:
