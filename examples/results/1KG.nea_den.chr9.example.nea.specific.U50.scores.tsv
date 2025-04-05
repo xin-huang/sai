@@ -1,4 +1,4 @@
-Chrom	Start	End	Ref	Tgt	Src	N(Variants)	U50(w=0.01,y=(=1.0,=0.0))	Candidate
+Chrom	Start	End	Ref	Tgt	Src	N(Variants)	U50(w<0.01,y=(=1.0,=0.0))	Candidate
 9	16400001	16440000	AFR+EAS	EUR	NEA,DEN	1082	0	NA
 9	16440001	16480000	AFR+EAS	EUR	NEA,DEN	983	0	NA
 9	16480001	16520000	AFR+EAS	EUR	NEA,DEN	985	0	NA
