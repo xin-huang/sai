@@ -91,7 +91,7 @@ sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
 ```
 
 We provide a BED file to specify the ancestral allele for each variant, based on alignments from [Ensembl](https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/).
-In this example, the `--w`, `--x`, and `--y` arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population, greater than 0.5 in the target population, and fixed (`=1`) in both Neanderthal and Denisovan genomes. The output is shown above and can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv).
+In this example, the `--w`, and `--y` arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population and fixed (`=1`) in both Neanderthal and Denisovan genomes. The `50` in `--stat U50` indicates that the allele frequency must be greater than 0.5 in the target population. The output is shown above and can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv).
 
 To estimate the Q95 statistic for the same data, simply change `--stat U50` to `--stat Q95`:
 
