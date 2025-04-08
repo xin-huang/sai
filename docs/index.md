@@ -6,15 +6,16 @@
 
 `sai` works on Linux operating systems and tested with the following:
 
-    - matplotlib=3.9.1
-    - natsort=8.4.0
-    - numpy=1.26.4
-    - pandas=2.2.1
-    - pysam=0.23.0
-    - python=3.9.19
-    - pytest=8.1.1
-    - scikit-allel=1.3.7
-    - scipy=1.12.0
+- matplotlib=3.9.1
+- natsort=8.4.0
+- numpy=1.26.4
+- pandas=2.2.1
+- pysam=0.23.0
+- python=3.9.19
+- pytest=8.1.1
+- pytest-cov=6.0.0
+- scikit-allel=1.3.7
+- scipy=1.12.0
 
 ## Installation
 
