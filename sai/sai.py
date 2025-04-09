@@ -309,5 +309,5 @@ def plot(
     plt.ylabel(ylabel)
     plt.title(title)
     plt.grid(alpha=0.5, linestyle="--")
-    plt.savefig(output, dpi=dpi)
+    plt.savefig(output, bbox_inches='tight', dpi=dpi)
     plt.close()
