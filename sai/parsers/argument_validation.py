@@ -159,7 +159,9 @@ def validate_stat_type(value: str) -> str:
     argparse.ArgumentTypeError
         If the input does not match the expected format ("U" or "QXX").
     """
-    if re.fullmatch(r"[UQ]\d{2}", value):  # Matches U or Q followed by exactly two digits
+    if re.fullmatch(
+        r"[UQ]\d{2}", value
+    ):  # Matches U or Q followed by exactly two digits
         return value
     else:
         raise argparse.ArgumentTypeError(

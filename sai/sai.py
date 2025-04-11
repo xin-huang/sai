@@ -283,7 +283,9 @@ def plot(
             ],
             u_column: [u_interval_dict[c] for c in common_intervals],
             q_column: [q_interval_dict[c] for c in common_intervals],
-            "Overlapping Candidate": [get_candidate_overlap(c) for c in common_intervals],
+            "Overlapping Candidate": [
+                get_candidate_overlap(c) for c in common_intervals
+            ],
         }
     )
 
@@ -309,5 +311,5 @@ def plot(
     plt.ylabel(ylabel)
     plt.title(title)
     plt.grid(alpha=0.5, linestyle="--")
-    plt.savefig(output, bbox_inches='tight', dpi=dpi)
+    plt.savefig(output, bbox_inches="tight", dpi=dpi)
     plt.close()
