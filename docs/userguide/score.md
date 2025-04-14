@@ -1,6 +1,6 @@
 # Calculate Statistics
 
-`sai` provides the `score` command to calculate the number of uniquely shared sites (U statistic) and the quantile statistic (Q statistic).
+`sai` provides the `score` command to calculate the number of uniquely shared sites (U statistic) and the quantile of the allele frequencies in such sites (Q statistic).
 
 To see available options, we can use the following command:
 
@@ -75,7 +75,7 @@ Each row in the output file corresponds to a genomic window, summarizing the res
 
 ## Examples
 
-The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region `chr9:16400000-16900000` from [the 1000 Genomes Project](https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/). The Neanderthal genome was obtained from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/), and the Denisovan genome from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/). The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).
+The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region `chr9:16400001-16900000` from [the 1000 Genomes Project](https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/). The Neanderthal genome was obtained from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/), and the Denisovan genome from [here](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/). The reference population includes all African populations (ESN, GWD, LWK, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CDX, CHB, CHS, JPT, KHV). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).
 
 To detect adaptively introgressed variants from **both Neanderthals and Denisovans**, we can use the following command:
 

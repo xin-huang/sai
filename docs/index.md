@@ -1,6 +1,6 @@
 # SAI
 
-`sai` is a Python package for **S**tatistics for **A**daptive **I**ntrogression. It detects candidate regions of adaptive introgression from population genomic datasets. Currently, it supports the calculation of the number of uniquely shared sites (U statistic) and the quantile statistic (Q statistic) proposed by [Racimo et al. (2017)](https://doi.org/10.1093/molbev/msw216). `sai` does not require phased data, and supports an arbitrary number of source/donor populations (i.e., populations assumed to provide introgressed material) and arbitrary ploidy.
+`sai` is a Python package for **S**tatistics for **A**daptive **I**ntrogression. It detects candidate regions of adaptive introgression from population genomic datasets. Currently, it supports the calculation of the number of uniquely shared sites (U statistic) and the quantile of the derived allele frequencies in such sites (Q statistic) proposed by [Racimo et al. (2017)](https://doi.org/10.1093/molbev/msw216). `sai` does not require phased data, and supports an arbitrary number of source/donor populations (i.e., populations assumed to provide introgressed material) and arbitrary ploidy.
 
 ## Requirements
 
@@ -27,6 +27,12 @@ cd sai
 mamba env create -f build-env.yaml
 mamba activate sai
 pip install .
+```
+
+Users can also install `sai` from `pypi`:
+
+```
+pip install sai-pg
 ```
 
 ## Help
