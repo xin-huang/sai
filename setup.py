@@ -32,7 +32,7 @@ with open(os.path.join(HERE, "README.md")) as fid:
 setup(
     name="sai-pg",
     python_requires="==3.9.19",
-    version="1.0.0",
+    version="1.0.1",
     description="A Python Package for Statistics for Adaptive Introgression",
     long_description=README,
     long_description_content_type="text/markdown",

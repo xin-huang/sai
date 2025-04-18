@@ -608,6 +608,7 @@ def split_genome(
     pos: np.ndarray,
     window_size: int,
     step_size: int,
+    start: int = None,
 ) -> list[tuple]:
     """
     Creates sliding windows along the genome based on variant positions.
@@ -620,6 +621,9 @@ def split_genome(
         Length of each sliding window.
     step_size : int
         Step size of the sliding windows.
+    start: int, optional
+        Minimum starting coordinate for the first window. The first window will start
+        no smaller than this value. Default is None.
 
     Returns
     -------
@@ -644,7 +648,9 @@ def split_genome(
 
     window_positions = []
     win_start = (pos[0] + step_size) // step_size * step_size - window_size + 1
-    win_start = max(win_start, 1)
+    if start is None:
+        start = 1
+    win_start = max(win_start, start)
 
     # Create windows based on step size and window size
     while win_start <= pos[-1]:
