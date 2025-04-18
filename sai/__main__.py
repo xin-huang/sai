@@ -46,7 +46,6 @@ def _sai_cli_parser() -> argparse.ArgumentParser:
     -------
     top_parser : argparse.ArgumentParser
         A configured command-line interface parser.
-
     """
     top_parser = argparse.ArgumentParser()
     subparsers = top_parser.add_subparsers(dest="subcommand")
@@ -67,7 +66,6 @@ def main(arg_list: list = None) -> None:
     ----------
     arg_list : list, optional
         A list containing arguments for sai. Default: None.
-
     """
     _set_sigpipe_handler()
     parser = _sai_cli_parser()

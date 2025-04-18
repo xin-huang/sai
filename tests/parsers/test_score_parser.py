@@ -123,7 +123,6 @@ def test_add_score_parser_with_invalid_src():
 
 
 def test_parse_y_thresholds_valid():
-    """Test valid cases for _parse_y_thresholds."""
     assert _parse_y_thresholds("=0.7") == ("=", 0.7)
     assert _parse_y_thresholds(">0.8") == (">", 0.8)
     assert _parse_y_thresholds("<0.1") == ("<", 0.1)
@@ -134,7 +133,6 @@ def test_parse_y_thresholds_valid():
 
 
 def test_parse_y_thresholds_invalid_format():
-    """Test cases where input format is invalid."""
     with pytest.raises(argparse.ArgumentTypeError):
         _parse_y_thresholds("0.7")  # Missing operator
     with pytest.raises(argparse.ArgumentTypeError):
@@ -150,7 +148,6 @@ def test_parse_y_thresholds_invalid_format():
 
 
 def test_parse_y_thresholds_out_of_range():
-    """Test cases where the numerical value is out of range [0,1]."""
     with pytest.raises(argparse.ArgumentTypeError):
         _parse_y_thresholds("=1.1")  # Out of range
     with pytest.raises(argparse.ArgumentTypeError):

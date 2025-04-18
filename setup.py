@@ -30,7 +30,7 @@ with open(os.path.join(HERE, "README.md")) as fid:
 
 # This call to setup() does all the work
 setup(
-    name="sai",
+    name="sai-pg",
     python_requires="==3.9.19",
     version="1.0.0",
     description="A Python Package for Statistics for Adaptive Introgression",
@@ -41,7 +41,7 @@ setup(
     author_email="xinhuang.res@gmail.com",
     license="GPLv3",
     classifiers=[
-        "License :: OSI Approved :: GNU General Public License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.9",
     ],
