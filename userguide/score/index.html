@@ -483,7 +483,7 @@
 
 
 <h1 id="calculate-statistics">Calculate Statistics</h1>
-<p><code>sai</code> provides the <code>score</code> command to calculate the number of uniquely shared sites (U statistic) and the quantile statistic (Q statistic).</p>
+<p><code>sai</code> provides the <code>score</code> command to calculate the number of uniquely shared sites (U statistic) and the quantile of the allele frequencies in such sites (Q statistic).</p>
 <p>To see available options, we can use the following command:</p>
 <div class="codehilite"><pre><span></span><code>sai score -h
 </code></pre></div>
@@ -769,7 +769,7 @@ DEN Denisova
 </tbody>
 </table>
 <h2 id="examples">Examples</h2>
-<p>The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400000-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CHB, CHS, DAI, KHV, JPT). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
+<p>The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400001-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, LWK, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CDX, CHB, CHS, JPT, KHV). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
 <p>To detect adaptively introgressed variants from <strong>both Neanderthals and Denisovans</strong>, we can use the following command:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
           --ref examples/data/1KG.ref.samples.txt \
