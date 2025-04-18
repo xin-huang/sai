@@ -125,6 +125,7 @@ class WindowGenerator(DataGenerator):
                 ),
                 window_size=self.win_len,
                 step_size=self.win_step,
+                start=start,
             )
             for tgt_pop in self.tgt_samples
         }
@@ -152,21 +153,21 @@ class WindowGenerator(DataGenerator):
             for start, end in self.tgt_windows[tgt_pop]:
                 ref_gts = self.ref_data[ref_pop].GT[
                     (self.ref_data[ref_pop].POS >= start)
-                    & (self.ref_data[ref_pop].POS < end)
+                    & (self.ref_data[ref_pop].POS <= end)
                 ]
                 tgt_gts = self.tgt_data[tgt_pop].GT[
                     (self.tgt_data[tgt_pop].POS >= start)
-                    & (self.tgt_data[tgt_pop].POS < end)
+                    & (self.tgt_data[tgt_pop].POS <= end)
                 ]
                 src_gts_list = [
                     self.src_data[src_pop].GT[
                         (self.src_data[src_pop].POS >= start)
-                        & (self.src_data[src_pop].POS < end)
+                        & (self.src_data[src_pop].POS <= end)
                     ]
                     for src_pop in src_comb
                 ]
 
-                sub_pos = tgt_pos[(tgt_pos >= start) & (tgt_pos < end)]
+                sub_pos = tgt_pos[(tgt_pos >= start) & (tgt_pos <= end)]
 
                 yield {
                     "chr_name": self.chr_name,

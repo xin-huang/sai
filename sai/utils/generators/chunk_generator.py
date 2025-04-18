@@ -131,18 +131,12 @@ class ChunkGenerator(DataGenerator):
         remainder = len(windows) % num_chunks
         result = []
         start_idx = 0
-        prev_end = None
 
         for i in range(num_chunks):
             end_idx = start_idx + avg + (1 if i < remainder else 0)
             sub = windows[start_idx:end_idx]
             if sub:
-                min_start = sub[0][0]
-                max_end = sub[-1][1]
-                if (prev_end is not None) and (min_start < prev_end):
-                    min_start = prev_end + 1
-                result.append((min_start, max_end))
-                prev_end = max_end
+                result.append((sub[0][0], sub[-1][1]))
             start_idx = end_idx
 
         return result

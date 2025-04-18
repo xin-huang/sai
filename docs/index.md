@@ -29,7 +29,7 @@ mamba activate sai
 pip install .
 ```
 
-Users can also install `sai` from `pypi`:
+Users can also install `sai` from [PYPI](https://pypi.org/):
 
 ```
 pip install sai-pg
