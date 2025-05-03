@@ -41,6 +41,7 @@ class ChunkPreprocessor(DataPreprocessor):
         src_ind_file: str,
         win_len: int,
         win_step: int,
+        ploidy: list[int],
         w: float,
         y: list[float],
         output_file: str,
@@ -65,6 +66,9 @@ class ChunkPreprocessor(DataPreprocessor):
             Window length for generating genomic windows.
         win_step : int
             Step size for sliding windows across the genome.
+        ploidy : list[int]
+            A list of three integers specifying the ploidy of the reference, target,
+            and source populations, respectively.
         w : float
             Parameter w for feature vector computation.
         y : list of float
@@ -85,6 +89,7 @@ class ChunkPreprocessor(DataPreprocessor):
         self.src_ind_file = src_ind_file
         self.win_len = win_len
         self.win_step = win_step
+        self.ploidy = ploidy
         self.anc_allele_file = anc_allele_file
         self.num_src = num_src
 
@@ -129,6 +134,7 @@ class ChunkPreprocessor(DataPreprocessor):
             src_ind_file=self.src_ind_file,
             win_len=self.win_len,
             win_step=self.win_step,
+            ploidy=self.ploidy,
             anc_allele_file=self.anc_allele_file,
             num_src=self.num_src,
         )

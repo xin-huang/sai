@@ -56,6 +56,9 @@ def _run_score(args: argparse.Namespace) -> None:
             Number of source populations. The length of `args.y` should match `num_src`.
         - anc_alleles : str
             Path to the ancestral allele file.
+        - ploidy : list of int
+            A list of three integers specifying the ploidy of the reference, target,
+            and source populations, respectively.
         - w : float
             Allele frequency threshold for the reference group.
         - y : list of float
@@ -88,6 +91,7 @@ def _run_score(args: argparse.Namespace) -> None:
         win_step=args.win_step,
         num_src=num_src,
         anc_allele_file=args.anc_alleles,
+        ploidy=args.ploidy,
         w=args.w,
         y=args.y,
         output_file=args.output,
@@ -208,6 +212,14 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         type=existed_file,
         default=None,
         help="Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None.",
+    )
+    parser.add_argument(
+        "--ploidy",
+        type=positive_int,
+        nargs=3,
+        default=[2, 2, 2],
+        metavar=("REF", "TGT", "SRC"),
+        help="Ploidy values for reference, target, and source populations (in that order). Default: 2 2 2.",
     )
     parser.add_argument(
         "--w",
