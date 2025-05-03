@@ -241,7 +241,7 @@ def test_calc_q_with_two_sources():
 
     # Run test
     result, loci_positions = calc_q(
-        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, [1, 1, 1], quantile
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, [1, 1, 1, 1], quantile
     )
     if np.isnan(expected_result):
         assert np.isnan(result), f"Expected NaN, got {result}"
@@ -256,7 +256,7 @@ def test_calc_q_with_two_sources():
     expected_positions = np.array([0])
 
     result, loci_positions = calc_u(
-        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list, [1, 1, 1]
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list, [1, 1, 1, 1]
     )
     assert np.isclose(result, expected_result)
     assert np.array_equal(loci_positions, expected_positions)

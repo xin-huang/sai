@@ -248,8 +248,7 @@ def read_data(
     chr_name : str
         Name of the chromosome to read.
     ploidy : list[int]
-        A list of three integers specifying the ploidy of the reference, target,
-        and source populations, respectively.
+        Ploidy values for reference, target, and one or more source populations (in that order).
     ref_ind_file : str or None
         File with reference population sample information. None if not provided.
     tgt_ind_file : str or None

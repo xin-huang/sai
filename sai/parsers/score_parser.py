@@ -71,7 +71,9 @@ def _run_score(args: argparse.Namespace) -> None:
     Raises
     ------
     ValueError
-        If the length of `args.y` does not match the expected number of source populations (`args.num_src`),
+        If the length of `args.y` does not match the expected number of source populations (`num_src`),
+        or if fewer than three ploidy values are provided,
+        or if the number of ploidy values for source populations does not match `num_src`.
         or if other input parameters do not meet expected conditions.
     """
     src_samples = parse_ind_file(args.src)
@@ -79,6 +81,17 @@ def _run_score(args: argparse.Namespace) -> None:
     if len(args.y) != num_src:
         raise ValueError(
             f"The length of y ({len(args.y)}) does not match the number of source populations ({num_src}) found in {args.src}."
+        )
+
+    if len(args.ploidy) < 3:
+        raise ValueError(
+            "At least three ploidy values must be provided: one for REF, one for TGT, and at least one for SRC."
+        )
+
+    if len(args.ploidy) - 2 != num_src:
+        raise ValueError(
+            f"The number of ploidy values for source populations ({len(args.ploidy)-2}) "
+            f"does not match the number of source populations ({num_src}) found in {args.src}."
         )
 
     score(
@@ -216,10 +229,10 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--ploidy",
         type=positive_int,
-        nargs=3,
+        nargs="+",
         default=[2, 2, 2],
-        metavar=("REF", "TGT", "SRC"),
-        help="Ploidy values for reference, target, and source populations (in that order). Default: 2 2 2.",
+        metavar="REF, TGT, SRC",
+        help="Ploidy values for reference, target, and one or more source populations (in that order). Example: 2 2 4 4 for one REF, one TGT, and two SRC populations. Default: 2 2 2.",
     )
     parser.add_argument(
         "--w",

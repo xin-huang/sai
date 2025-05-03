@@ -69,8 +69,7 @@ def score(
     anc_allele_file : str
         Path to the file containing ancestral allele information.
     ploidy: list[int]
-        A list of three integers specifying the ploidy of the reference, target,
-        and source populations, respectively.
+        Ploidy values for reference, target, and one or more source populations (in that order).
     w : float
         Frequency threshold for calculating feature vectors.
     y : list[float]

@@ -73,7 +73,7 @@ def compute_matching_loci(
         - `threshold` is a float within [0, 1]
         The length must match `src_gts_list`.
     ploidy : list[int]
-        A list of three integers specifying the ploidy of the reference, target, and source populations, respectively.
+        Ploidy values for reference, target, and one or more source populations (in that order).
     anc_allele_available : bool
         If True, checks only for matches with `y` (assuming `1` represents the derived allele).
         If False, checks both matches with `y` and `1 - y`, taking the dominant allele in the source as the reference.
@@ -103,7 +103,10 @@ def compute_matching_loci(
     # Compute allele frequencies
     ref_freq = calc_freq(ref_gts, ploidy[0])
     tgt_freq = calc_freq(tgt_gts, ploidy[1])
-    src_freq_list = [calc_freq(src_gts, ploidy[2]) for src_gts in src_gts_list]
+    src_freq_list = [
+        calc_freq(src_gts, ploidy_val)
+        for src_gts, ploidy_val in zip(src_gts_list, ploidy[2:])
+    ]
 
     # Check match for each `y`
     op_funcs = {
@@ -176,7 +179,7 @@ def calc_u(
         Threshold for the allele frequency in `tgt_gts`. Only loci with frequencies greater than `x` are counted.
         Must be within the range [0, 1].
     ploidy : list[int]
-        A list of three integers specifying the ploidy of the reference, target, and source populations, respectively.
+        Ploidy values for reference, target, and one or more source populations (in that order).
     y_list : list[float]
         List of exact allele frequency thresholds for each source population in `src_gts_list`.
         Must be within the range [0, 1] and have the same length as `src_gts_list`.
@@ -253,7 +256,7 @@ def calc_q(
         List of exact frequency thresholds for each source population in `src_gts_list`.
         Must be within the range [0, 1] and have the same length as `src_gts_list`.
     ploidy : list[int]
-        A list of three integers specifying the ploidy of the reference, target, and source populations, respectively.
+        Ploidy values for reference, target, and one or more source populations (in that order).
     quantile : float, optional
         The quantile to compute for the filtered `tgt_gts` frequencies. Must be within the range [0, 1].
         Default is 0.95 (95% quantile).

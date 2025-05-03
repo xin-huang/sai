@@ -66,8 +66,7 @@ class WindowGenerator(DataGenerator):
         win_step : int
             The step size between windows in base pairs.
         ploidy : list[int]
-            A list of three integers specifying the ploidy of the reference, target,
-            and source populations, respectively.
+            Ploidy values for reference, target, and one or more source populations (in that order).
         start: int, optional
             The starting position (1-based, inclusive) on the chromosome. Default: None.
         end: int, optional

@@ -67,8 +67,7 @@ class ChunkPreprocessor(DataPreprocessor):
         win_step : int
             Step size for sliding windows across the genome.
         ploidy : list[int]
-            A list of three integers specifying the ploidy of the reference, target,
-            and source populations, respectively.
+            Ploidy values for reference, target, and one or more source populations (in that order).
         w : float
             Parameter w for feature vector computation.
         y : list of float
