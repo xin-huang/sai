@@ -33,6 +33,7 @@ def test_generator():
         src_ind_file="tests/data/test.src.ind.list",
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
+        ploidy=[2, 2, 2],
     )
     return generator
 
@@ -75,7 +76,7 @@ def test_none_window_generator(test_generator):
     assert first_window["ref_gts"] is None
     assert first_window["tgt_gts"] is None
     assert first_window["src_gts_list"] is None
-    assert first_window["ploidy"] is None
+    assert first_window["ploidy"] == [2, 2, 2]
     assert len(first_window["pos"]) == 0
 
 
@@ -96,6 +97,7 @@ def test_generator_two_sources():
         win_len=1000,  # Set window length as appropriate for testing
         win_step=500,  # Set window step as appropriate for testing
         num_src=2,  # Set to 2 to test two-source combinations
+        ploidy=[2, 2, 2],
     )
     return generator
 
@@ -104,7 +106,7 @@ def test_initialization_two_sources(test_generator_two_sources):
     # Verify initialization parameters for two-source generator
     assert test_generator_two_sources.win_len == 1000
     assert test_generator_two_sources.win_step == 500
-    assert test_generator_two_sources.ploidy == 2
+    assert test_generator_two_sources.ploidy == [2, 2, 2]
     assert test_generator_two_sources.num_src == 2
 
 

@@ -48,7 +48,7 @@ def compute_matching_loci(
     src_gts_list: list[np.ndarray],
     w: float,
     y_list: list[tuple[str, float]],
-    ploidy: int,
+    ploidy: list[int],
     anc_allele_available: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -72,8 +72,8 @@ def compute_matching_loci(
         - `operator` can be '=', '<', '>', '<=', '>='
         - `threshold` is a float within [0, 1]
         The length must match `src_gts_list`.
-    ploidy : int
-        The ploidy level of the organism.
+    ploidy : list[int]
+        Ploidy values for reference, target, and one or more source populations (in that order).
     anc_allele_available : bool
         If True, checks only for matches with `y` (assuming `1` represents the derived allele).
         If False, checks both matches with `y` and `1 - y`, taking the dominant allele in the source as the reference.
@@ -101,9 +101,12 @@ def compute_matching_loci(
         raise ValueError("The length of src_gts_list and y_list must match.")
 
     # Compute allele frequencies
-    ref_freq = calc_freq(ref_gts, ploidy)
-    tgt_freq = calc_freq(tgt_gts, ploidy)
-    src_freq_list = [calc_freq(src_gts, ploidy) for src_gts in src_gts_list]
+    ref_freq = calc_freq(ref_gts, ploidy[0])
+    tgt_freq = calc_freq(tgt_gts, ploidy[1])
+    src_freq_list = [
+        calc_freq(src_gts, ploidy_val)
+        for src_gts, ploidy_val in zip(src_gts_list, ploidy[2:])
+    ]
 
     # Check match for each `y`
     op_funcs = {
@@ -151,7 +154,7 @@ def calc_u(
     w: float,
     x: float,
     y_list: list[float],
-    ploidy: int = 1,
+    ploidy: list[int],
     anc_allele_available: bool = False,
 ) -> tuple[int, np.ndarray]:
     """
@@ -175,11 +178,11 @@ def calc_u(
     x : float
         Threshold for the allele frequency in `tgt_gts`. Only loci with frequencies greater than `x` are counted.
         Must be within the range [0, 1].
-    y_list : list of float
+    ploidy : list[int]
+        Ploidy values for reference, target, and one or more source populations (in that order).
+    y_list : list[float]
         List of exact allele frequency thresholds for each source population in `src_gts_list`.
         Must be within the range [0, 1] and have the same length as `src_gts_list`.
-    ploidy : int, optional
-        The ploidy level of the organism. Default is 1, which assumes phased data.
     anc_allele_available : bool
         If True, checks only for matches with `y` (assuming `1` represents the derived allele).
         If False, checks both matches with `y` and `1 - y`, taking the major allele in the source as the reference.
@@ -227,8 +230,8 @@ def calc_q(
     pos: np.ndarray,
     w: float,
     y_list: list[float],
+    ploidy: list[int],
     quantile: float = 0.95,
-    ploidy: int = 1,
     anc_allele_available: bool = False,
 ) -> float:
     """
@@ -249,14 +252,14 @@ def calc_q(
     w : float
         Frequency threshold for the derived allele in `ref_gts`. Only loci with frequencies lower than `w` are included.
         Must be within the range [0, 1].
-    y_list : list of float
+    y_list : list[float]
         List of exact frequency thresholds for each source population in `src_gts_list`.
         Must be within the range [0, 1] and have the same length as `src_gts_list`.
+    ploidy : list[int]
+        Ploidy values for reference, target, and one or more source populations (in that order).
     quantile : float, optional
         The quantile to compute for the filtered `tgt_gts` frequencies. Must be within the range [0, 1].
         Default is 0.95 (95% quantile).
-    ploidy : int, optional
-        The ploidy level of the organism. Default is 1, which assumes phased data.
     anc_allele_available : bool
         If True, checks only for matches with `y` (assuming `1` represents the derived allele).
         If False, checks both matches with `y` and `1 - y`, taking the major allele in the source as the reference.

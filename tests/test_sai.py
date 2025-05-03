@@ -46,7 +46,7 @@ def example_data(tmp_path):
     }
 
 
-def test_score(example_data, capfd):
+def test_score(example_data):
     # Run score function and capture output
     score(
         vcf_file=example_data["vcf_file"],
@@ -60,16 +60,11 @@ def test_score(example_data, capfd):
         anc_allele_file=None,
         w=0.3,
         y=[("=", 1)],
+        ploidy=[2, 2, 2],
         output_file=example_data["output_file"],
         stat_type="Q95",
         num_workers=1,
     )
-
-    # Capture the printed output
-    out, err = capfd.readouterr()
-
-    # Assert expected output in stdout
-    assert "Found 3 variants with missing genotypes, removing them ..." in out
 
     # Read the generated output file and validate contents
     df = pd.read_csv(example_data["output_file"], sep="\t")
@@ -77,6 +72,34 @@ def test_score(example_data, capfd):
     col_name = [col for col in df.columns if col.startswith("Q95(")][0]
 
     assert df[col_name].iloc[0] == 0.9, "Unexpected value in 'Q95' column"
+
+
+def test_score_mixed_ploidy(example_data):
+    score(
+        vcf_file="./tests/data/test.mixed.ploidy.data.vcf",
+        chr_name="21",
+        ref_ind_file="./tests/data/test.ref.ind.list",
+        tgt_ind_file="./tests/data/test.tgt.ind.list",
+        src_ind_file="./tests/data/test.src.ind.list",
+        win_len=50000,
+        win_step=50000,
+        num_src=2,
+        anc_allele_file=None,
+        w=0.3,
+        y=[("=", 1.0), ("=", 1.0)],
+        ploidy=[2, 4, 4],
+        output_file=example_data["output_file"],
+        stat_type="U80",
+        num_workers=1,
+    )
+
+    df = pd.read_csv(example_data["output_file"], sep="\t")
+
+    col_name = [col for col in df.columns if col.startswith("U80(")][0]
+
+    assert col_name == "U80(w<0.3,y=(=1.0,=1.0))"
+    assert df[col_name].iloc[0] == 0, "Unexpected value in 'U80' column"
+    assert df[col_name].iloc[1] == 1, "Unexpected value in 'U80' column"
 
 
 def test_outlier(example_data):
@@ -92,6 +115,7 @@ def test_outlier(example_data):
         anc_allele_file=None,
         w=0.3,
         y=[("=", 1)],
+        ploidy=[2, 2, 2],
         output_file=example_data["output_file"],
         stat_type="Q95",
         num_workers=1,

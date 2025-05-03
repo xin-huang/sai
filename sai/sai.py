@@ -38,6 +38,7 @@ def score(
     win_step: int,
     num_src: int,
     anc_allele_file: str,
+    ploidy: list[int],
     w: float,
     y: list[float],
     output_file: str,
@@ -67,6 +68,8 @@ def score(
         Number of source populations to include in each windowed analysis.
     anc_allele_file : str
         Path to the file containing ancestral allele information.
+    ploidy: list[int]
+        Ploidy values for reference, target, and one or more source populations (in that order).
     w : float
         Frequency threshold for calculating feature vectors.
     y : list[float]
@@ -93,6 +96,7 @@ def score(
         src_ind_file=src_ind_file,
         win_len=win_len,
         win_step=win_step,
+        ploidy=ploidy,
         w=w,
         y=y,
         output_file=output_file,
