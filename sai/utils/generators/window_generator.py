@@ -18,6 +18,7 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
+import numpy as np
 from itertools import combinations, product
 from typing import Iterator, Any
 from sai.utils import read_data, split_genome
@@ -39,6 +40,7 @@ class WindowGenerator(DataGenerator):
         src_ind_file: str,
         win_len: int,
         win_step: int,
+        ploidy: list[int],
         start: int = None,
         end: int = None,
         anc_allele_file: str = None,
@@ -63,6 +65,8 @@ class WindowGenerator(DataGenerator):
             The length of each window in base pairs.
         win_step : int
             The step size between windows in base pairs.
+        ploidy : list[int]
+            Ploidy values for reference, target, and one or more source populations (in that order).
         start: int, optional
             The starting position (1-based, inclusive) on the chromosome. Default: None.
         end: int, optional
@@ -88,6 +92,7 @@ class WindowGenerator(DataGenerator):
         self.win_step = win_step
         self.num_src = num_src
         self.chr_name = chr_name
+        self.ploidy = ploidy
 
         # Load data
         (
@@ -97,7 +102,6 @@ class WindowGenerator(DataGenerator):
             self.tgt_samples,
             self.src_data,
             self.src_samples,
-            self.ploidy,
         ) = read_data(
             vcf_file=vcf_file,
             chr_name=self.chr_name,
@@ -106,11 +110,13 @@ class WindowGenerator(DataGenerator):
             ref_ind_file=ref_ind_file,
             tgt_ind_file=tgt_ind_file,
             src_ind_file=src_ind_file,
+            ploidy=ploidy,
             anc_allele_file=anc_allele_file,
             is_phased=False,
             filter_ref=False,
             filter_tgt=False,
             filter_src=False,
+            filter_missing=True,
         )
 
         self.src_combinations = list(
@@ -149,39 +155,70 @@ class WindowGenerator(DataGenerator):
         for ref_pop, tgt_pop, src_comb in product(
             self.ref_samples, self.tgt_samples, self.src_combinations
         ):
-            tgt_pos = self.tgt_data[tgt_pop].POS
             for start, end in self.tgt_windows[tgt_pop]:
-                ref_gts = self.ref_data[ref_pop].GT[
-                    (self.ref_data[ref_pop].POS >= start)
-                    & (self.ref_data[ref_pop].POS <= end)
+                ref_data = self.ref_data[ref_pop]
+                tgt_data = self.tgt_data[tgt_pop]
+                src_data_list = [self.src_data[src_pop] for src_pop in src_comb]
+
+                ref_mask = (ref_data.POS >= start) & (ref_data.POS <= end)
+                tgt_mask = (tgt_data.POS >= start) & (tgt_data.POS <= end)
+                src_masks = [
+                    (src_data.POS >= start) & (src_data.POS <= end)
+                    for src_data in src_data_list
                 ]
-                tgt_gts = self.tgt_data[tgt_pop].GT[
-                    (self.tgt_data[tgt_pop].POS >= start)
-                    & (self.tgt_data[tgt_pop].POS <= end)
+
+                ref_pos = ref_data.POS[ref_mask]
+                tgt_pos = tgt_data.POS[tgt_mask]
+                src_pos_list = [
+                    src_data.POS[mask]
+                    for src_data, mask in zip(src_data_list, src_masks)
                 ]
+
+                common_pos = np.intersect1d(ref_pos, tgt_pos)
+                for src_pos in src_pos_list:
+                    common_pos = np.intersect1d(common_pos, src_pos)
+
+                ref_gts = ref_data.GT.compress(
+                    np.isin(ref_data.POS, common_pos), axis=0
+                )
+                tgt_gts = tgt_data.GT.compress(
+                    np.isin(tgt_data.POS, common_pos), axis=0
+                )
                 src_gts_list = [
-                    self.src_data[src_pop].GT[
-                        (self.src_data[src_pop].POS >= start)
-                        & (self.src_data[src_pop].POS <= end)
-                    ]
-                    for src_pop in src_comb
+                    src_data.GT.compress(np.isin(src_data.POS, common_pos), axis=0)
+                    for src_data in src_data_list
                 ]
 
-                sub_pos = tgt_pos[(tgt_pos >= start) & (tgt_pos <= end)]
+                sub_pos = common_pos
 
-                yield {
-                    "chr_name": self.chr_name,
-                    "ref_pop": ref_pop,
-                    "tgt_pop": tgt_pop,
-                    "src_pop_list": src_comb,  # List of source populations in this combination
-                    "start": start,
-                    "end": end,
-                    "pos": sub_pos,
-                    "ref_gts": ref_gts,
-                    "tgt_gts": tgt_gts,
-                    "src_gts_list": src_gts_list,  # List of genotypes for each source population in src_comb
-                    "ploidy": self.ploidy,
-                }
+                if len(sub_pos) == 0:
+                    yield {
+                        "chr_name": self.chr_name,
+                        "ref_pop": ref_pop,
+                        "tgt_pop": tgt_pop,
+                        "src_pop_list": src_comb,
+                        "start": start,
+                        "end": end,
+                        "pos": [],
+                        "ref_gts": None,
+                        "tgt_gts": None,
+                        "src_gts_list": None,
+                        "ploidy": self.ploidy,
+                    }
+                else:
+                    yield {
+                        "chr_name": self.chr_name,
+                        "ref_pop": ref_pop,
+                        "tgt_pop": tgt_pop,
+                        "src_pop_list": src_comb,  # List of source populations in this combination
+                        "start": start,
+                        "end": end,
+                        "pos": sub_pos,
+                        "ref_gts": ref_gts,
+                        "tgt_gts": tgt_gts,
+                        "src_gts_list": src_gts_list,  # List of genotypes for each source population in src_comb
+                        "ploidy": self.ploidy,
+                    }
 
     def _none_window_generator(self) -> Iterator[dict[str, Any]]:
         """
@@ -218,7 +255,7 @@ class WindowGenerator(DataGenerator):
                     "ref_gts": None,
                     "tgt_gts": None,
                     "src_gts_list": None,
-                    "ploidy": None,
+                    "ploidy": self.ploidy,
                 }
 
     def get(self) -> Iterator[dict[str, Any]]:

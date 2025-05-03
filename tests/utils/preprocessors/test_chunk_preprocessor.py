@@ -55,6 +55,7 @@ def test_chunk_preprocessor(example_data):
         anc_allele_file=None,
         w=0.3,
         y=[("=", 1)],
+        ploidy=[2, 2, 2],
         output_file=example_data["output_file"],
         stat_type="Q95",
     )

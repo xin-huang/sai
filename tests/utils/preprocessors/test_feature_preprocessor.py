@@ -76,7 +76,7 @@ def test_run(feature_preprocessor):
         ref_gts=ref_gts,
         tgt_gts=tgt_gts,
         src_gts_list=src_gts_list,
-        ploidy=1,
+        ploidy=[1, 1, 1],
     )
 
     # Check that the result contains the expected keys
@@ -156,6 +156,7 @@ def test_run_from_file(example_data, tmp_path):
         src_ind_file=pytest.example_src_ind_list,
         win_len=6666,
         win_step=6666,
+        ploidy=[2, 2, 2],
     )
 
     # Create a temporary output file path using tmp_path

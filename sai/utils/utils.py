@@ -37,7 +37,7 @@ def parse_ind_file(filename: str) -> dict[str, list[str]]:
 
     Returns
     -------
-    samples : dict of str to list of str
+    samples : dict[str, list[str]]
         A dictionary where the keys represent categories, and the values are lists of samples
         associated with those categories.
 
@@ -77,11 +77,12 @@ def read_geno_data(
     vcf: str,
     ind_samples: dict[str, list[str]],
     chr_name: str,
+    ploidy: int = 2,
     start: int = None,
     end: int = None,
     anc_allele_file: Optional[str] = None,
     filter_missing: bool = True,
-) -> tuple[ChromosomeData, list[str], int]:
+) -> dict[str, ChromosomeData]:
     """
     Read genotype data from a VCF file efficiently for a specified chromosome.
 
@@ -93,9 +94,11 @@ def read_geno_data(
         A dictionary where keys are categories (e.g., different sample groups), and values are lists of sample names.
     chr_name : str
         The name of the chromosome to read.
-    start: int, optional
+    ploidy : int, optional
+        Ploidy level of the genome.
+    start : int, optional
         The starting position (1-based, inclusive) on the chromosome. Default: None.
-    end: int, optional
+    end : int, optional
         The ending position (1-based, inclusive) on the chromosome. Default: None.
     anc_allele_file : str, optional
         The name of the BED file containing ancestral allele information, or None if not provided.
@@ -104,12 +107,7 @@ def read_geno_data(
 
     Returns
     -------
-    chrom_data: ChromosomeData
-        A ChromosomeData instance for the specified chromosome in the VCF.
-    samples: list
-        A list of samples in the data.
-    ploidy: int
-        Ploidy level of the organism.
+    A dictionary mapping each population name to its ChromosomeData.
     """
     try:
         # Load all samples from the VCF file
@@ -132,21 +130,21 @@ def read_geno_data(
             ],
             alt_number=1,
             samples=all_samples,
+            numbers={"GT": ploidy},
             region=region,  # Specify the chromosome region
             tabix=None,
         )
     except Exception as e:
         raise ValueError(f"Failed to read VCF file {vcf} from {region}: {e}") from e
 
-    # Convert genotype data to a more efficient GenotypeArray
     if vcf_data is None:
-        return None, all_samples, None
+        return None
 
     gt = allel.GenotypeArray(vcf_data.get("calldata/GT"))
     pos = vcf_data.get("variants/POS")
     ref = vcf_data.get("variants/REF")
     alt = vcf_data.get("variants/ALT")
-    ploidy = gt.shape[2]
+    sample_names = list(vcf_data.get("samples"))
 
     if gt is None or pos is None or ref is None or alt is None:
         raise ValueError("Invalid VCF file: Missing essential genotype data fields.")
@@ -162,27 +160,33 @@ def read_geno_data(
     else:
         anc_alleles = None
 
-    sample_indices = [all_samples.index(s) for s in all_samples]
+    chrom_data_dict = {}
 
-    chrom_data = ChromosomeData(
-        POS=pos, REF=ref, ALT=alt, GT=gt.take(sample_indices, axis=1)
-    )
+    for pop, pop_samples in ind_samples.items():
+        indices = [sample_names.index(s) for s in pop_samples]
+        pop_gt = gt.take(indices, axis=1)
 
-    # Remove missing data if specified
-    if filter_missing:
-        non_missing_index = chrom_data.GT.count_missing(axis=1) == 0
-        num_missing = len(non_missing_index) - np.sum(non_missing_index)
-        if num_missing != 0:
-            print(
-                f"Found {num_missing} variants with missing genotypes, removing them ..."
-            )
-        chrom_data = filter_geno_data(chrom_data, non_missing_index)
+        chrom_data = ChromosomeData(
+            POS=pos.copy(), REF=ref.copy(), ALT=alt.copy(), GT=pop_gt
+        )
 
-    # Check and incorporate ancestral alleles if the file is provided
-    if anc_alleles:
-        chrom_data = check_anc_allele(chrom_data, anc_alleles, chr_name)
+        missing_mask = chrom_data.GT.count_missing(axis=1) != 0
 
-    return chrom_data, vcf_data.get("samples"), ploidy
+        if filter_missing:
+            if np.any(missing_mask):
+                chrom_data = filter_geno_data(chrom_data, ~missing_mask)
+        else:
+            if np.any(missing_mask):
+                raise ValueError(
+                    "Missing data is found. Please remove variants with missing data or enable filtering."
+                )
+
+        if anc_alleles:
+            chrom_data = check_anc_allele(chrom_data, anc_alleles, chr_name)
+
+        chrom_data_dict[pop] = chrom_data
+
+    return chrom_data_dict
 
 
 def filter_geno_data(
@@ -214,6 +218,7 @@ def filter_geno_data(
 def read_data(
     vcf_file: str,
     chr_name: str,
+    ploidy: list[int],
     ref_ind_file: Optional[str],
     tgt_ind_file: Optional[str],
     src_ind_file: Optional[str],
@@ -232,7 +237,6 @@ def read_data(
     Optional[dict[str, list[str]]],
     Optional[dict[str, dict[str, ChromosomeData]]],
     Optional[dict[str, list[str]]],
-    Optional[int],
 ]:
     """
     Helper function for reading data from reference, target, and source populations.
@@ -241,8 +245,10 @@ def read_data(
     ----------
     vcf_file : str
         Name of the VCF file containing genotype data.
-    chr_name: str
+    chr_name : str
         Name of the chromosome to read.
+    ploidy : list[int]
+        Ploidy values for reference, target, and one or more source populations (in that order).
     ref_ind_file : str or None
         File with reference population sample information. None if not provided.
     tgt_ind_file : str or None
@@ -280,8 +286,6 @@ def read_data(
         Genotype data from source populations, organized by category and chromosome.
     src_samples : dict or None
         Sample information from source populations.
-    ploidy: int or None
-        Ploidy level of the organism.
 
     Notes
     -----
@@ -298,111 +302,46 @@ def read_data(
     This organization allows easy access and manipulation of genotype data by category and chromosome,
     enabling flexible processing across different populations and chromosomal regions.
     """
-    ref_data = ref_samples = tgt_data = tgt_samples = src_data = src_samples = None
+    ref_data, ref_samples = _load_population_data(
+        vcf_file,
+        chr_name,
+        ref_ind_file,
+        anc_allele_file,
+        start,
+        end,
+        is_phased,
+        filter_ref,
+        filter_missing,
+        ploidy[0],
+    )
 
-    # Parse sample information
-    if ref_ind_file:
-        ref_samples = parse_ind_file(ref_ind_file)
+    tgt_data, tgt_samples = _load_population_data(
+        vcf_file,
+        chr_name,
+        tgt_ind_file,
+        anc_allele_file,
+        start,
+        end,
+        is_phased,
+        filter_tgt,
+        filter_missing,
+        ploidy[1],
+    )
 
-    if tgt_ind_file:
-        tgt_samples = parse_ind_file(tgt_ind_file)
+    src_data, src_samples = _load_population_data(
+        vcf_file,
+        chr_name,
+        src_ind_file,
+        anc_allele_file,
+        start,
+        end,
+        is_phased,
+        filter_src,
+        filter_missing,
+        ploidy[2],
+    )
 
-    if src_ind_file:
-        src_samples = parse_ind_file(src_ind_file)
-
-    # Combine all samples for a single VCF read
-    all_samples = {}
-    if ref_samples:
-        all_samples.update(ref_samples)
-    if tgt_samples:
-        all_samples.update(tgt_samples)
-    if src_samples:
-        all_samples.update(src_samples)
-
-    try:
-        # Read VCF data
-        geno_data, all_samples, ploidy = read_geno_data(
-            vcf=vcf_file,
-            ind_samples=all_samples,
-            chr_name=chr_name,
-            start=start,
-            end=end,
-            anc_allele_file=anc_allele_file,
-            filter_missing=filter_missing,
-        )
-    except Exception as e:
-        raise ValueError(f"Failed to read VCF data: {e}")
-
-    if geno_data is None:
-        return None, ref_samples, None, tgt_samples, None, src_samples, None
-
-    # Separate reference, target, and source data
-    ref_data = extract_group_data(geno_data, all_samples, ref_samples)
-    tgt_data = extract_group_data(geno_data, all_samples, tgt_samples)
-    src_data = extract_group_data(geno_data, all_samples, src_samples)
-
-    # Apply fixed variant filtering conditionally
-    if filter_ref and ref_data and ref_samples:
-        ref_data = filter_fixed_variants(ref_data, ref_samples)
-    if filter_tgt and tgt_data and tgt_samples:
-        tgt_data = filter_fixed_variants(tgt_data, tgt_samples)
-    if filter_src and src_data and src_samples:
-        src_data = filter_fixed_variants(src_data, src_samples)
-
-    # Adjust genotypes based on phased/unphased requirement
-    reshape_genotypes(ref_data, is_phased)
-    reshape_genotypes(tgt_data, is_phased)
-    reshape_genotypes(src_data, is_phased)
-
-    return ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy
-
-
-def extract_group_data(
-    geno_data: dict[str, ChromosomeData],
-    all_samples: list[str],
-    sample_groups: Optional[dict[str, list[str]]] = None,
-) -> Optional[dict[str, ChromosomeData]]:
-    """
-    Extract genotype data from geno_data based on the sample groups.
-
-    Parameters
-    ----------
-    geno_data : dict of str to ChromosomeData
-        Contains genotype data, where each value is a ChromosomeData instance.
-    all_samples: list
-        A list of all sample names in the dataset.
-    sample_groups : dict of str to list of str, optional
-        Contains sample group information, where each key is a group name and the value is a list of samples.
-        If None, the function returns None.
-
-    Returns
-    -------
-    extracted_data : dict or None
-        Genotype data organized by sample group, or None if no sample groups are provided.
-        The structure is as follows:
-
-        - Keys represent sample group names.
-        - Values are ChromosomeData instances, filtered to include only the samples in the specified group.
-    """
-    if sample_groups is None:
-        return None
-
-    sample_indices = {sample: idx for idx, sample in enumerate(all_samples)}
-
-    extracted_data = {}
-
-    for group, samples in sample_groups.items():
-        indices = [sample_indices[s] for s in samples if s in sample_indices]
-
-        # Extract ChromosomeData for the selected samples in each group
-        extracted_data[group] = ChromosomeData(
-            GT=geno_data.GT[:, indices, :],
-            POS=geno_data.POS,
-            REF=geno_data.REF,
-            ALT=geno_data.ALT,
-        )
-
-    return extracted_data
+    return ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples
 
 
 def filter_fixed_variants(
@@ -693,3 +632,81 @@ def natsorted_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return df.loc[sorted_indices].reset_index(drop=True)
+
+
+def _load_population_data(
+    vcf_file: str,
+    chr_name: str,
+    sample_file: Optional[str],
+    anc_allele_file: Optional[str],
+    start: Optional[int],
+    end: Optional[int],
+    is_phased: bool,
+    filter_flag: bool,
+    filter_missing: bool,
+    ploidy: int,
+) -> tuple[
+    Optional[dict[str, dict[str, ChromosomeData]]], Optional[dict[str, list[str]]]
+]:
+    """
+    Loads genotype data and sample information for a population group from a VCF file.
+
+    Parameters
+    ----------
+    vcf_file : str
+        Path to the VCF file containing variant data.
+    chr_name : str
+        Chromosome name to extract from the VCF.
+    sample_file : str or None
+        Path to the file containing sample IDs grouped by population.
+        If None, no data is loaded.
+    anc_allele_file : str or None
+        Path to the BED file with ancestral allele annotations.
+    start : int or None
+        Start position on the chromosome (1-based, inclusive). If None, starts at the beginning.
+    end : int or None
+        End position on the chromosome (1-based, inclusive). If None, reads to the end.
+    is_phased : bool
+        Whether the genotypes are phased.
+    filter_flag : bool
+        Whether to remove variants fixed in all samples of each population.
+    filter_missing : bool
+        Whether to filter out variants with missing genotypes across all samples.
+    ploidy : int
+        Ploidy level of the samples in this group.
+
+    Returns
+    -------
+    data : dict[str, ChromosomeData] or None
+        Dictionary mapping population name to ChromosomeData for the specified chromosome.
+    samples : dict[str, list[str]] or None
+        Dictionary mapping population name to a list of sample IDs.
+    """
+    if sample_file is None:
+        return None, None
+
+    samples = parse_ind_file(sample_file)
+
+    try:
+        data = read_geno_data(
+            vcf=vcf_file,
+            ind_samples=samples,
+            chr_name=chr_name,
+            start=start,
+            end=end,
+            anc_allele_file=anc_allele_file,
+            filter_missing=filter_missing,
+            ploidy=ploidy,
+        )
+    except Exception as e:
+        raise ValueError(f"Failed to read VCF data for {sample_file}: {e}")
+
+    if data is None:
+        return None, samples
+
+    if filter_flag:
+        data = filter_fixed_variants(data, samples)
+
+    reshape_genotypes(data, is_phased)
+
+    return data, samples
