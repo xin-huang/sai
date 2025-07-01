@@ -18,12 +18,10 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-from .generic_statistic import GenericStatistic
-from .danc_statistic import DancStatistic
-from .df_statistic import DfStatistic
-from .dplus_statistic import DplusStatistic
-from .fd_statistic import FdStatistic
-from .fdm_statistic import FdmStatistic
-from .q_statistic import QStatistic
-from .rd_statistic import RdStatistic
-from .u_statistic import UStatistic
+from sai.stats import GenericStatistic
+
+
+class FdStatistic(GenericStatistic):
+    """ """
+
+    pass
