@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 from unittest.mock import mock_open, patch
 from sai.utils import ChromosomeData
-from sai.utils import extract_group_data
 from sai.utils import filter_fixed_variants
 from sai.utils import filter_geno_data
 from sai.utils import flip_snps
@@ -135,7 +134,7 @@ def test_parse_ind_file_from_files(data):
 
 def test_read_geno_data_from_file(data):
     ref_ind = parse_ind_file(pytest.ref_ind_list)
-    d, s, ploidy = read_geno_data(
+    d = read_geno_data(
         vcf=pytest.vcf,
         ind_samples=ref_ind,
         chr_name="21",
@@ -146,26 +145,24 @@ def test_read_geno_data_from_file(data):
     vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ref_ind["ref1"], region="21")
 
     assert np.array_equal(ref_ind["ref1"], vcf["samples"])
-    assert np.array_equal(d.POS, vcf["variants/POS"])
-    assert np.array_equal(d.REF, vcf["variants/REF"])
-    assert np.array_equal(d.ALT, vcf["variants/ALT"])
-    assert np.array_equal(d.GT, vcf["calldata/GT"])
-    assert ploidy == 2
+    assert np.array_equal(d["ref1"].POS, vcf["variants/POS"])
+    assert np.array_equal(d["ref1"].REF, vcf["variants/REF"])
+    assert np.array_equal(d["ref1"].ALT, vcf["variants/ALT"])
+    assert np.array_equal(d["ref1"].GT, vcf["calldata/GT"])
 
 
 def test_read_data_from_file(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy = (
-        read_data(
-            vcf_file=pytest.vcf,
-            chr_name="21",
-            ref_ind_file=pytest.ref_ind_list,
-            tgt_ind_file=pytest.tgt_ind_list,
-            src_ind_file=None,
-            anc_allele_file=None,
-            filter_ref=False,
-            filter_tgt=False,
-            filter_src=False,
-        )
+    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
+        vcf_file=pytest.vcf,
+        chr_name="21",
+        ref_ind_file=pytest.ref_ind_list,
+        tgt_ind_file=pytest.tgt_ind_list,
+        src_ind_file=None,
+        anc_allele_file=None,
+        filter_ref=False,
+        filter_tgt=False,
+        filter_src=False,
+        ploidy=[2, 2, 2],
     )
 
     rs = parse_ind_file(pytest.ref_ind_list)
@@ -173,7 +170,6 @@ def test_read_data_from_file(data):
 
     assert np.array_equal(rs, ref_samples)
     assert np.array_equal(ts, tgt_samples)
-    assert ploidy == 2
 
     ref_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=rs["ref1"], region="21")
     tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ts["tgt2"], region="21")
@@ -256,17 +252,16 @@ def test_get_ref_alt_allele(data):
 
 
 def test_check_anc_allele(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples, ploidy = (
-        read_data(
-            vcf_file=pytest.vcf,
-            chr_name="21",
-            ref_ind_file=pytest.ref_ind_list,
-            tgt_ind_file=pytest.tgt_ind_list,
-            src_ind_file=None,
-            anc_allele_file=pytest.anc_allele,
-            filter_ref=False,
-            filter_tgt=False,
-        )
+    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
+        vcf_file=pytest.vcf,
+        chr_name="21",
+        ref_ind_file=pytest.ref_ind_list,
+        tgt_ind_file=pytest.tgt_ind_list,
+        src_ind_file=None,
+        anc_allele_file=pytest.anc_allele,
+        filter_ref=False,
+        filter_tgt=False,
+        ploidy=[2, 2, 2],
     )
 
     exp_ref_gt = allel.GenotypeArray(
@@ -398,55 +393,6 @@ def test_flip_snps(sample_chromosome_data):
     assert sample_chromosome_data.GT[2].tolist() == [[0, 0], [0, 1]]
     # Position 400: original [[1, 0], [0, 0]] -> flipped [[0, 1], [1, 1]]
     assert sample_chromosome_data.GT[3].tolist() == [[0, 1], [1, 1]]
-
-
-# Test data setup for extract_group_data
-@pytest.fixture
-def mock_chromosome_data():
-    # Create a mock ChromosomeData instance for testing
-    return ChromosomeData(
-        GT=np.array(
-            [
-                [[0, 0], [1, 1], [0, 1]],
-                [[1, 1], [1, -1], [0, 0]],
-                [[0, 0], [0, 1], [1, 1]],
-            ]
-        ),
-        POS=np.array([100, 200, 300]),
-        REF=np.array(["A", "T", "G"]),
-        ALT=np.array(["C", "A", "T"]),
-    )
-
-
-def test_extract_group_data(mock_chromosome_data):
-    # Mock all_samples and sample_groups for testing
-    all_samples = ["sample1", "sample2", "sample3"]
-    sample_groups = {"group1": ["sample1", "sample3"], "group2": ["sample2"]}
-
-    # Mock geno_data structure
-    geno_data = mock_chromosome_data
-
-    # Call the function
-    result = extract_group_data(
-        geno_data=geno_data, all_samples=all_samples, sample_groups=sample_groups
-    )
-
-    # Verify group1 data
-    group1_data = result["group1"]
-    assert group1_data.POS.tolist() == [100, 200, 300]
-    assert group1_data.REF.tolist() == ["A", "T", "G"]
-    assert group1_data.ALT.tolist() == ["C", "A", "T"]
-    assert group1_data.GT.shape == (3, 2, 2)
-    assert group1_data.GT[:, 0, :].tolist() == [[0, 0], [1, 1], [0, 0]]  # sample1
-    assert group1_data.GT[:, 1, :].tolist() == [[0, 1], [0, 0], [1, 1]]  # sample3
-
-    # Verify group2 data
-    group2_data = result["group2"]
-    assert group2_data.POS.tolist() == [100, 200, 300]
-    assert group2_data.REF.tolist() == ["A", "T", "G"]
-    assert group2_data.ALT.tolist() == ["C", "A", "T"]
-    assert group2_data.GT.shape == (3, 1, 2)
-    assert group2_data.GT[:, 0, :].tolist() == [[1, 1], [1, -1], [0, 1]]  # sample2
 
 
 # Sample test function for split_genome

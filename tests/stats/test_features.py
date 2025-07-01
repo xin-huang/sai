@@ -36,14 +36,18 @@ def test_calc_u_basic():
     w, x, y = 0.5, 0.5, ("=", 0)
     expected_count = 1  # Only the first site meets the criteria
     expected_positions = np.array([0])
-    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts], pos, w, x, [y], [1, 1, 1]
+    )
     assert result == expected_count
     assert np.array_equal(loci_positions, expected_positions)
 
     w, x, y = 0.5, 0.5, ("=", 1)
     expected_count = 0
     expected_positions = np.array([])
-    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y], True)
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts], pos, w, x, [y], [1, 1, 1], True
+    )
     assert result == expected_count
     assert np.array_equal(loci_positions, expected_positions)
 
@@ -60,7 +64,9 @@ def test_calc_u_no_match():
 
     expected_count = 0  # No sites meet the criteria
     expected_positions = np.array([])
-    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts], pos, w, x, [y], [1, 1, 1]
+    )
     assert result == expected_count
     assert np.array_equal(loci_positions, expected_positions)
 
@@ -78,7 +84,9 @@ def test_calc_u_all_match():
     expected_count = 2  # All sites meet the criteria
     expected_positions = np.array([0, 1])
 
-    result, loci_positions = calc_u(ref_gts, tgt_gts, [src_gts], pos, w, x, [y])
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts], pos, w, x, [y], [1, 1, 1]
+    )
     assert result == expected_count
     assert np.array_equal(loci_positions, expected_positions)
 
@@ -96,14 +104,16 @@ def test_calc_q_basic():
     expected_positions = np.array([0])
 
     # Run test
-    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile
+    )
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
     assert np.array_equal(loci_positions, expected_positions)
 
     result, loci_positions = calc_q(
-        ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile, True
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile, True
     )
     assert np.isclose(
         result, expected_result
@@ -127,7 +137,9 @@ def test_calc_q_no_match():
     expected_positions = np.array([])
 
     # Run test
-    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile
+    )
     assert np.isnan(result), f"Expected NaN, got {result}"
     assert np.array_equal(loci_positions, expected_positions)
 
@@ -147,7 +159,9 @@ def test_calc_q_different_quantile():
     expected_positions = np.array([1, 2])
 
     # Run test
-    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile
+    )
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
@@ -167,7 +181,9 @@ def test_calc_q_edge_case():
     expected_positions = np.array([1])
 
     # Run test
-    result, loci_positions = calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile
+    )
     assert np.isclose(
         result, expected_result
     ), f"Expected {expected_result}, got {result}"
@@ -186,7 +202,7 @@ def test_calc_q_invalid_quantile():
         ValueError,
         match="Parameter quantile must be within the range \\[0, 1\\]",
     ):
-        calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], quantile)
+        calc_q(ref_gts, tgt_gts, [src_gts], pos, w, [y], [1, 1, 1], quantile)
 
 
 def test_calc_u_with_two_sources():
@@ -204,7 +220,7 @@ def test_calc_u_with_two_sources():
 
     # Run test
     result, loci_positions = calc_u(
-        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list, [1, 1, 1]
     )
     assert result == expected_result, f"Expected {expected_result}, got {result}"
     assert np.array_equal(loci_positions, expected_positions)
@@ -225,14 +241,9 @@ def test_calc_q_with_two_sources():
 
     # Run test
     result, loci_positions = calc_q(
-        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, quantile
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, [1, 1, 1, 1], quantile
     )
-    if np.isnan(expected_result):
-        assert np.isnan(result), f"Expected NaN, got {result}"
-    else:
-        assert np.isclose(
-            result, expected_result
-        ), f"Expected {expected_result}, got {result}"
+    assert np.isnan(result), f"Expected NaN, got {result}"
     assert np.array_equal(loci_positions, expected_positions)
 
     w, x, y_list = 0.5, 0.8, [("=", 1), ("=", 0)]
@@ -240,9 +251,42 @@ def test_calc_q_with_two_sources():
     expected_positions = np.array([0])
 
     result, loci_positions = calc_u(
-        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, x, y_list, [1, 1, 1, 1]
     )
     assert np.isclose(result, expected_result)
+    assert np.array_equal(loci_positions, expected_positions)
+
+
+def test_calc_u_mixed_ploidy():
+    ref_gts = np.array([[0, 1, 0], [0, 1, 0], [2, 1, 0]])
+    tgt_gts = np.array([[1, 1, 0], [1, 1, 1], [1, 1, 1]])
+    src_gts = np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]])
+    pos = np.array([0, 1, 2])
+    w, x, y = 0.5, 0.5, ("=", 0)
+    expected_count = 2
+    expected_positions = np.array([0, 2])
+    result, loci_positions = calc_u(
+        ref_gts, tgt_gts, [src_gts], pos, w, x, [y], [3, 1, 2]
+    )
+    assert result == expected_count
+    assert np.array_equal(loci_positions, expected_positions)
+
+
+def test_calc_q_mixed_ploidy():
+    ref_gts = np.array([[1, 1, 0], [0, 1, 1], [1, 1, 1], [0, 0, 1]])
+    tgt_gts = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [1, 1, 1]])
+    src_gts1 = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 1]])
+    src_gts2 = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0], [1, 1, 1]])
+    pos = np.array([0, 1, 2, 3])
+    w, y_list, quantile = 0.5, [("=", 1), ("=", 1)], 0.95
+
+    expected_result = np.nan
+    expected_positions = np.array([])
+
+    result, loci_positions = calc_q(
+        ref_gts, tgt_gts, [src_gts1, src_gts2], pos, w, y_list, [2, 2, 4, 4], quantile
+    )
+    assert np.isnan(result), f"Expected NaN, got {result}"
     assert np.array_equal(loci_positions, expected_positions)
 
 
@@ -306,7 +350,7 @@ def test_compute_matching_loci():
 
     # Define parameters with all possible conditions
     conditions = [("=", 0.5), ("<", 0.4), (">", 0.3), ("<=", 0.6), (">=", 0.2)]
-    ploidy = 2
+    ploidy = [2, 2, 2]
     anc_allele_available = False
 
     for y_condition in conditions:

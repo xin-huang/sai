@@ -53,6 +53,10 @@ def test_add_score_parser(parser):
             "50000",
             "--win-step",
             "10000",
+            "--ploidy",
+            "2",
+            "4",
+            "4",
             "--w",
             "0.3",
             "--y",
@@ -75,6 +79,7 @@ def test_add_score_parser(parser):
     assert args.win_len == 50000
     assert args.win_step == 10000
     assert args.anc_alleles is None
+    assert args.ploidy == [2, 4, 4]
     assert args.w == 0.3
     assert args.y == [("=", 0.1), ("<", 0.2)]
     assert args.output == "output/results.tsv"

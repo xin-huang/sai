@@ -16,3 +16,5 @@
 # along with this program. If not, please see
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
+
+__version__ = "1.0.3"

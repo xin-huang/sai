@@ -19,6 +19,7 @@
 
 
 import argparse
+from sai import __version__
 from sai.parsers.score_parser import add_score_parser
 from sai.parsers.outlier_parser import add_outlier_parser
 from sai.parsers.plot_parser import add_plot_parser
@@ -48,6 +49,7 @@ def _sai_cli_parser() -> argparse.ArgumentParser:
         A configured command-line interface parser.
     """
     top_parser = argparse.ArgumentParser()
+    top_parser.add_argument("--version", action="version", version=f"{__version__}")
     subparsers = top_parser.add_subparsers(dest="subcommand")
     subparsers.required = True
 
