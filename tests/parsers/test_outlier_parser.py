@@ -39,8 +39,8 @@ def test_add_outlier_parser(parser):
             "outlier",
             "--score",
             "tests/data/example.scores",
-            "--output",
-            "output/test_outliers.tsv",
+            "--output-prefix",
+            "output/test_outliers",
             "--quantile",
             "0.95",
         ]
@@ -49,5 +49,5 @@ def test_add_outlier_parser(parser):
     # Validate parsed arguments
     assert args.command == "outlier"
     assert args.score == "tests/data/example.scores"
-    assert args.output == "output/test_outliers.tsv"
+    assert args.output_prefix == "output/test_outliers"
     assert args.quantile == 0.95

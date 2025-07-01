@@ -20,29 +20,23 @@
 
 import os
 import warnings
+import yaml
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from sai.utils.generators import ChunkGenerator
-from sai.utils.preprocessors import ChunkPreprocessor
+from pathlib import Path
+from sai.generators import ChunkGenerator
+from sai.preprocessors import ChunkPreprocessor
+from sai.configs import GlobalConfig
 from sai.utils.utils import natsorted_df
 
 
 def score(
     vcf_file: str,
     chr_name: str,
-    ref_ind_file: str,
-    tgt_ind_file: str,
-    src_ind_file: str,
     win_len: int,
     win_step: int,
-    num_src: int,
     anc_allele_file: str,
-    ploidy: list[int],
-    w: float,
-    y: list[float],
     output_file: str,
-    stat_type: str,
+    config: str,
     num_workers: int,
 ) -> None:
     """
@@ -54,64 +48,89 @@ def score(
         Path to the VCF file containing variant data.
     chr_name : str
         The chromosome name to be analyzed from the VCF file.
-    ref_ind_file : str
-        Path to the file containing reference population identifiers.
-    tgt_ind_file : str
-        Path to the file containing target population identifiers.
-    src_ind_file : str
-        Path to the file containing source population identifiers.
     win_len : int
         Length of each genomic window in base pairs.
     win_step : int
         Step size in base pairs between consecutive windows.
-    num_src : int
-        Number of source populations to include in each windowed analysis.
     anc_allele_file : str
         Path to the file containing ancestral allele information.
-    ploidy: list[int]
-        Ploidy values for reference, target, and one or more source populations (in that order).
-    w : float
-        Frequency threshold for calculating feature vectors.
-    y : list[float]
-        List of frequency thresholds used for various calculations in feature vector processing.
     output_file : str
         File path to save the output of processed feature vectors.
-    stat_type: str
-        Specifies the type of statistic to compute.
+    config: str
+        Path to the YAML configuration file specifying the statistics and ploidies to compute.
     num_workers : int
         Number of parallel processes for multiprocessing.
     """
+    try:
+        with open(config, "r") as f:
+            config_dict = yaml.safe_load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Configuration file '{config}' not found.")
+    except yaml.YAMLError as e:
+        raise ValueError(f"Error parsing YAML configuration file '{config}': {e}")
+
+    required_fields = ["statistics", "ploidies", "populations"]
+    missing_fields = [field for field in required_fields if field not in config_dict]
+
+    if missing_fields:
+        raise ValueError(
+            f"Missing required fields in configuration file '{config}': {', '.join(missing_fields)}"
+        )
+
+    global_config = GlobalConfig(**config_dict)
+
+    stat_config = global_config.statistics
+    ploidy_config = global_config.ploidies
+    pop_config = global_config.populations
+
     generator = ChunkGenerator(
         vcf_file=vcf_file,
         chr_name=chr_name,
         window_size=win_len,
         step_size=win_step,
-        num_chunks=num_workers * 8,
+        # num_chunks=num_workers * 8,
+        num_chunks=1,
     )
 
     preprocessor = ChunkPreprocessor(
         vcf_file=vcf_file,
-        ref_ind_file=ref_ind_file,
-        tgt_ind_file=tgt_ind_file,
-        src_ind_file=src_ind_file,
+        ref_ind_file=pop_config.get_population("ref"),
+        tgt_ind_file=pop_config.get_population("tgt"),
+        src_ind_file=pop_config.get_population("src"),
+        out_ind_file=pop_config.get_population("outgroup"),
         win_len=win_len,
         win_step=win_step,
-        ploidy=ploidy,
-        w=w,
-        y=y,
         output_file=output_file,
-        stat_type=stat_type,
+        ploidy_config=ploidy_config,
+        stat_config=stat_config,
         anc_allele_file=anc_allele_file,
-        num_src=num_src,
     )
 
-    header = f"Chrom\tStart\tEnd\tRef\tTgt\tSrc\tN(Variants)\t{stat_type}(w<{w},y=({','.join(f'{op}{val}' for op, val in y)}))\tCandidate\n"
+    src_pops = list(ploidy_config.root["src"].keys())
+
+    header_parts = ["Chrom", "Start", "End", "Ref", "Tgt", "Src", "N(Variants)"]
+
+    for stat_name in stat_config.root.keys():
+        if stat_name in ("U", "Q") or len(src_pops) <= 1:
+            header_parts.append(stat_name)
+        else:
+            for sp in src_pops:
+                header_parts.append(f"{stat_name}.{sp}")
+
+    header = "\t".join(header_parts) + "\n"
 
     directory = os.path.dirname(output_file)
     if directory:
         os.makedirs(directory, exist_ok=True)
     with open(output_file, "w") as f:
         f.write(header)
+
+    for key in ("U", "Q"):
+        if key in stat_config.root:
+            path = Path(output_file)
+            log_file = path.with_suffix(f".{key}.log")
+            with open(log_file, "w") as f:
+                f.write(f"Chrom\tStart\tEnd\t{key}_SNP\n")
 
     items = []
 
@@ -121,199 +140,80 @@ def score(
     preprocessor.process_items(items)
 
 
-def outlier(score_file: str, output: str, quantile: float) -> None:
+def outlier(score_file: str, output_prefix: str, quantile: float) -> None:
     """
-    Outputs rows exceeding the specified quantile for the chosen column ('U' or 'Q'),
-    sorted by Start and then End columns.
+    Identifies outlier windows for each statistic column in a score file and
+    write them to separate output files.
+
+    This function reads a tab-delimited score file, determines which columns
+    contain statistics (e.g., U, Q, D+, etc.), computes the specified quantile
+    threshold for each statistic, and outputs rows exceeding that threshold.
+    Results for each statistic are written to a separate TSV file, sorted by
+    Chrom, Start, and End when available.
 
     Parameters
     ----------
     score_file : str
-        Path to the input file, in CSV format.
-    output : str
-        Path to the output file.
+        Path to the input score file (tab-delimited).
+    output_prefix : str
+        Prefix for the output files. Each output file is named
+        "{output_prefix}.{stat}.tsv".
     quantile : float
-        Quantile threshold to filter rows.
+        Quantile threshold (between 0 and 1) used to define outliers.
     """
-    # Read the input data file
-    data = pd.read_csv(
-        score_file,
-        sep="\t",
-        na_values=["nan"],
-        dtype={"Candidate": str},
-        index_col=False,
-    )
+    df = pd.read_csv(score_file, sep="\t", na_values=["nan"], index_col=False)
 
-    column = data.columns[-2]
-
-    # Convert column to numeric for computation
-    data[column] = pd.to_numeric(data[column], errors="coerce")
-
-    # Calculate quantile threshold for the chosen column
-    threshold = data[column].quantile(quantile)
-
-    if data[column].nunique() == 1:
-        warnings.warn(
-            f"Column '{column}' contains only one unique value ({threshold}), making quantile filtering meaningless.",
-            UserWarning,
-        )
-        outliers = pd.DataFrame(columns=data.columns)
-    elif (threshold == 1) and (column.startswith("Q")):
-        outliers = data[data[column] >= threshold]
+    cols = list(df.columns)
+    if "N(Variants)" in cols:
+        start_idx = cols.index("N(Variants)") + 1
+        metric_cols = cols[start_idx:]
     else:
-        outliers = data[data[column] > threshold]
+        # fallback: exclude common non-metric columns, keep numeric ones
+        non_metrics = {"Chrom", "Start", "End", "Ref", "Tgt", "Src"}
+        candidate = [c for c in cols if c not in non_metrics]
+        metric_cols = [
+            c for c in candidate if pd.to_numeric(df[c], errors="coerce").notna().any()
+        ]
 
-    # Sort the filtered data by 'Chrom', 'Start', 'End' columns
-    if not outliers.empty:
-        outliers = outliers.reset_index(drop=True)
-        outliers_sorted = natsorted_df(outliers)
-    else:
-        outliers_sorted = outliers
+    if not metric_cols:
+        raise ValueError("No metric columns found.")
 
-    # Convert all columns to string before saving
-    outliers_sorted = outliers_sorted.astype(str)
+    for col in metric_cols:
+        s_num = pd.to_numeric(df[col], errors="coerce").dropna()
 
-    # Save the sorted filtered data to the output file
-    outliers_sorted.to_csv(output, index=False, sep="\t")
+        if s_num.empty:
+            warnings.warn(
+                f"Column '{col}' has no numeric values; writing empty result.",
+                UserWarning,
+            )
+            out_sorted = pd.DataFrame(columns=df.columns)
+        elif s_num.nunique() == 1:
+            thr = s_num.iloc[0]
+            warnings.warn(
+                f"Column '{col}' has only one unique value ({thr}); writing empty result.",
+                UserWarning,
+            )
+            out_sorted = pd.DataFrame(columns=df.columns)
+        else:
+            thr = s_num.quantile(quantile)
+            col_num = pd.to_numeric(df[col], errors="coerce")
+            if not col.startswith("U"):
+                out = df[col_num >= thr]
+            else:
+                out = df[col_num > thr]
 
+            if not out.empty:
+                out = out.reset_index(drop=True)
+                try:
+                    out_sorted = natsorted_df(out)  # your existing natural sort
+                except NameError:
+                    keys = [k for k in ("Chrom", "Start", "End") if k in out.columns]
+                    out_sorted = (
+                        out.sort_values(by=keys, kind="mergesort") if keys else out
+                    )
+            else:
+                out_sorted = out
 
-def plot(
-    u_file: str,
-    q_file: str,
-    output: str,
-    xlabel: str,
-    ylabel: str,
-    title: str,
-    figsize_x: float = 6,
-    figsize_y: float = 6,
-    dpi: int = 300,
-    alpha: float = 0.6,
-    marker_size: float = 20,
-    marker_color: str = "blue",
-    marker_style: str = "o",
-) -> None:
-    """
-    Reads two score/outlier files (U and Q), finds common candidate positions, and plots U vs. Q.
-
-    Parameters
-    ----------
-    u_file : str
-        Path to the input file containing U score/outlier data.
-    q_file : str
-        Path to the input file containing Q score/outlier data.
-    output : str
-        Path to save the output plot.
-    xlabel : str
-        Label for the X-axis.
-    ylabel : str
-        Label for the Y-axis.
-    title : str
-        Title of the plot.
-    figsize_x : float, optional
-        Width of the figure (default: 6).
-    figsize_y : float, optional
-        Height of the figure (default: 6).
-    dpi : int, optional
-        Resolution of the saved plot (default: 300).
-    alpha : float, optional
-        Transparency level of scatter points (default: 0.6).
-    marker_size : float, optional
-        Size of the scatter plot markers (default: 20).
-    marker_color : str, optional
-        Color of the markers (default: "blue").
-    marker_style : str, optional
-        Shape of the marker (default: "o").
-    """
-    u_data = pd.read_csv(u_file, sep="\t")
-    q_data = pd.read_csv(q_file, sep="\t")
-
-    u_column = u_data.columns[-2]
-    q_column = q_data.columns[-2]
-
-    u_data["interval"] = (
-        u_data["Chrom"].astype(str)
-        + ":"
-        + u_data["Start"].astype(str)
-        + "-"
-        + u_data["End"].astype(str)
-    )
-    q_data["interval"] = (
-        q_data["Chrom"].astype(str)
-        + ":"
-        + q_data["Start"].astype(str)
-        + "-"
-        + q_data["End"].astype(str)
-    )
-
-    u_data[u_column] = pd.to_numeric(u_data[u_column], errors="coerce")
-    q_data[q_column] = pd.to_numeric(q_data[q_column], errors="coerce")
-    u_data = u_data.dropna(subset=[u_column])
-    q_data = q_data.dropna(subset=[q_column])
-
-    u_interval_dict = {row["interval"]: row[u_column] for _, row in u_data.iterrows()}
-    q_interval_dict = {row["interval"]: row[q_column] for _, row in q_data.iterrows()}
-    u_candidate_dict = {
-        row["interval"]: set(str(row["Candidate"]).split(","))
-        for _, row in u_data.iterrows()
-    }
-    q_candidate_dict = {
-        row["interval"]: set(str(row["Candidate"]).split(","))
-        for _, row in q_data.iterrows()
-    }
-
-    common_intervals = set(u_interval_dict.keys()) & set(q_interval_dict.keys())
-    if not common_intervals:
-        raise ValueError(
-            "No common genomic intervals found between U and Q score/outlier files."
+        out_sorted.astype(str).to_csv(
+            f"{output_prefix}.{col}.{quantile}.outliers.tsv", index=False, sep="\t"
         )
-
-    # Helper: get candidate overlap or "."
-    def get_candidate_overlap(interval):
-        u_set = u_candidate_dict.get(interval, set())
-        q_set = q_candidate_dict.get(interval, set())
-        overlap = sorted(u_set & q_set)
-        return ",".join(overlap) if overlap else "NA"
-
-    overlap_df = pd.DataFrame(
-        {
-            "Chrom": [interval.split(":")[0] for interval in common_intervals],
-            "Start": [
-                int(interval.split(":")[1].split("-")[0])
-                for interval in common_intervals
-            ],
-            "End": [
-                int(interval.split(":")[1].split("-")[1])
-                for interval in common_intervals
-            ],
-            u_column: [u_interval_dict[c] for c in common_intervals],
-            q_column: [q_interval_dict[c] for c in common_intervals],
-            "Overlapping Candidate": [
-                get_candidate_overlap(c) for c in common_intervals
-            ],
-        }
-    )
-
-    overlap_df_sorted = natsorted_df(overlap_df)
-    overlap_output = os.path.splitext(output)[0] + ".overlap.tsv"
-    pd.DataFrame(overlap_df_sorted).to_csv(overlap_output, sep="\t", index=False)
-
-    plt.figure(figsize=(figsize_x, figsize_y))
-    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.scatter(
-        x=overlap_df[q_column],
-        y=overlap_df[u_column],
-        alpha=alpha,
-        s=marker_size,
-        c=marker_color,
-        marker=marker_style,
-    )
-    xmin, xmax = plt.gca().get_xlim()
-    ymin, ymax = plt.gca().get_ylim()
-    plt.xlim(left=max(0, xmin))
-    plt.ylim(bottom=max(0, ymin))
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.grid(alpha=0.5, linestyle="--")
-    plt.savefig(output, bbox_inches="tight", dpi=dpi)
-    plt.close()

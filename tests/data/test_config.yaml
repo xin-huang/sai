@@ -1,0 +1,17 @@
+statistics:
+  U:
+    ref: 
+      popA: 0.01
+    tgt: 
+      popB: 0.5
+    src:
+      Nea: "=1"
+      Den: ">=0.8"
+  Q:
+    ref: 
+      popA: 0.01
+    tgt: 
+      popB: 0.95
+    src:
+      Nea: ">0.2"
+      Den: "<=0.8"

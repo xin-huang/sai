@@ -19,11 +19,13 @@
 
 
 import allel
+import warnings
 import numpy as np
 import pandas as pd
-from typing import Optional, Union
 from natsort import natsorted
+from typing import Optional, Union
 from sai.utils.genomic_dataclasses import ChromosomeData
+from sai.configs import PloidyConfig
 
 
 def parse_ind_file(filename: str) -> dict[str, list[str]]:
@@ -218,10 +220,11 @@ def filter_geno_data(
 def read_data(
     vcf_file: str,
     chr_name: str,
-    ploidy: list[int],
+    ploidy_config: PloidyConfig,
     ref_ind_file: Optional[str],
     tgt_ind_file: Optional[str],
     src_ind_file: Optional[str],
+    out_ind_file: Optional[str],
     anc_allele_file: Optional[str],
     start: int = None,
     end: int = None,
@@ -229,14 +232,18 @@ def read_data(
     filter_ref: bool = True,
     filter_tgt: bool = True,
     filter_src: bool = False,
+    filter_out: bool = False,
     filter_missing: bool = True,
-) -> tuple[
-    Optional[dict[str, dict[str, ChromosomeData]]],
-    Optional[dict[str, list[str]]],
-    Optional[dict[str, dict[str, ChromosomeData]]],
-    Optional[dict[str, list[str]]],
-    Optional[dict[str, dict[str, ChromosomeData]]],
-    Optional[dict[str, list[str]]],
+) -> dict[
+    str,
+    tuple[
+        Optional[dict[str, dict[str, ChromosomeData]]],
+        Optional[dict[str, list[str]]],
+        Optional[dict[str, dict[str, ChromosomeData]]],
+        Optional[dict[str, list[str]]],
+        Optional[dict[str, dict[str, ChromosomeData]]],
+        Optional[dict[str, list[str]]],
+    ],
 ]:
     """
     Helper function for reading data from reference, target, and source populations.
@@ -247,14 +254,16 @@ def read_data(
         Name of the VCF file containing genotype data.
     chr_name : str
         Name of the chromosome to read.
-    ploidy : list[int]
-        Ploidy values for reference, target, and one or more source populations (in that order).
+    ploidy_config : PloidyConfig
+        Configuration specifying ploidy levels for each population involved in the analysis.
     ref_ind_file : str or None
         File with reference population sample information. None if not provided.
     tgt_ind_file : str or None
         File with target population sample information. None if not provided.
     src_ind_file : str or None
         File with source population sample information. None if not provided.
+    out_ind_file : str or None
+        File with outgroup population sample information. None if not provided.
     anc_allele_file : str or None
         File with ancestral allele information. None if not provided.
     start: int, optional
@@ -269,11 +278,21 @@ def read_data(
         Whether to filter fixed variants for target data. Default: True.
     filter_src : bool, optional
         Whether to filter fixed variants for source data. Default: False.
+    filter_out : bool, optional
+        Whether to filter fixed variants for outgroup data. Default: False.
     filter_missing : bool, optional
         Whether to filter out missing data. Default: True.
 
     Returns
     -------
+    result : dict
+        {
+            "ref": (ref_data, ref_samples),
+            "tgt": (tgt_data, tgt_samples),
+            "src": (src_data, src_samples),
+            "outgroup": (out_data, out_samples)  # optional
+        }
+
     ref_data : dict or None
         Genotype data from reference populations, organized by category and chromosome.
     ref_samples : dict or None
@@ -286,10 +305,14 @@ def read_data(
         Genotype data from source populations, organized by category and chromosome.
     src_samples : dict or None
         Sample information from source populations.
+    out_data : dict or None
+        Genotype data from outgroup populations, organized by category and chromosome.
+    out_samples : dict or None
+        Sample information from outgroup populations.
 
     Notes
     -----
-    The `ref_data`, `tgt_data`, and `src_data` are organized as nested dictionaries where:
+    The `ref_data`, `tgt_data`, `src_data`, `out_data` are organized as nested dictionaries where:
 
         - The outermost keys represent different populations or sample categories.
         - The second-level keys represent different chromosomes.
@@ -302,46 +325,40 @@ def read_data(
     This organization allows easy access and manipulation of genotype data by category and chromosome,
     enabling flexible processing across different populations and chromosomal regions.
     """
-    ref_data, ref_samples = _load_population_data(
-        vcf_file,
-        chr_name,
-        ref_ind_file,
-        anc_allele_file,
-        start,
-        end,
-        is_phased,
-        filter_ref,
-        filter_missing,
-        ploidy[0],
-    )
+    group_params = [
+        ("ref", ref_ind_file, filter_ref),
+        ("tgt", tgt_ind_file, filter_tgt),
+        ("src", src_ind_file, filter_src),
+        ("outgroup", out_ind_file, filter_out),
+    ]
 
-    tgt_data, tgt_samples = _load_population_data(
-        vcf_file,
-        chr_name,
-        tgt_ind_file,
-        anc_allele_file,
-        start,
-        end,
-        is_phased,
-        filter_tgt,
-        filter_missing,
-        ploidy[1],
-    )
+    results = {}
 
-    src_data, src_samples = _load_population_data(
-        vcf_file,
-        chr_name,
-        src_ind_file,
-        anc_allele_file,
-        start,
-        end,
-        is_phased,
-        filter_src,
-        filter_missing,
-        ploidy[2],
-    )
+    for group, ind_file, filter_flag in group_params:
+        if ind_file is None:
+            results[group] = (None, None)
+            continue
 
-    return ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples
+        if group == "outgroup" and group not in ploidy_config.root:
+            results[group] = (None, None)
+            continue
+
+        data, samples = _load_population_data(
+            vcf_file=vcf_file,
+            chr_name=chr_name,
+            sample_file=ind_file,
+            anc_allele_file=anc_allele_file,
+            start=start,
+            end=end,
+            is_phased=is_phased,
+            filter_flag=filter_flag,
+            filter_missing=filter_missing,
+            ploidy_config=ploidy_config,
+            group=group,
+        )
+        results[group] = (data, samples)
+
+    return results
 
 
 def filter_fixed_variants(
@@ -644,12 +661,14 @@ def _load_population_data(
     is_phased: bool,
     filter_flag: bool,
     filter_missing: bool,
-    ploidy: int,
+    ploidy_config: PloidyConfig,
+    group: str,  # e.g., "ref", "tgt", "src"
 ) -> tuple[
     Optional[dict[str, dict[str, ChromosomeData]]], Optional[dict[str, list[str]]]
 ]:
     """
-    Loads genotype data and sample information for a population group from a VCF file.
+    Loads genotype data and sample information for a population group (e.g., reference) from a VCF file,
+    handling multiple populations with potentially different ploidy.
 
     Parameters
     ----------
@@ -672,41 +691,76 @@ def _load_population_data(
         Whether to remove variants fixed in all samples of each population.
     filter_missing : bool
         Whether to filter out variants with missing genotypes across all samples.
-    ploidy : int
-        Ploidy level of the samples in this group.
+    ploidy_config : PloidyConfig
+        Configuration containing ploidy for all populations in all groups.
+    group : str
+        The group label (e.g., "ref", "tgt", "src") used to extract populations from ploidy_config.
 
     Returns
     -------
-    data : dict[str, ChromosomeData] or None
-        Dictionary mapping population name to ChromosomeData for the specified chromosome.
+    data : dict[str, dict[str, ChromosomeData]] or None
+        Dictionary mapping population -> chromosome -> ChromosomeData.
     samples : dict[str, list[str]] or None
-        Dictionary mapping population name to a list of sample IDs.
+        Dictionary mapping population -> list of sample IDs.
     """
     if sample_file is None:
         return None, None
 
     samples = parse_ind_file(sample_file)
 
-    try:
-        data = read_geno_data(
-            vcf=vcf_file,
-            ind_samples=samples,
-            chr_name=chr_name,
-            start=start,
-            end=end,
-            anc_allele_file=anc_allele_file,
-            filter_missing=filter_missing,
-            ploidy=ploidy,
-        )
-    except Exception as e:
-        raise ValueError(f"Failed to read VCF data for {sample_file}: {e}")
+    if group not in ploidy_config.root:
+        raise ValueError(f"Ploidy configuration missing group '{group}'.")
 
-    if data is None:
+    group_ploidies = ploidy_config.root[group]
+
+    # Ensure all populations in ploidy_config[group] are in sample_file
+    for population in group_ploidies:
+        if population not in samples:
+            raise ValueError(
+                f"Population '{population}' in ploidy_config[{group}] not found in sample file: {sample_file}"
+            )
+
+    data: dict[str, ChromosomeData] = {}
+
+    for population, sample_list in samples.items():
+        if population not in group_ploidies:
+            warnings.warn(
+                f"Population '{population}' found in sample file but not in ploidy_config[{group}]; skipping.",
+                RuntimeWarning,
+            )
+            continue
+
+        ploidy = group_ploidies[population]
+
+        try:
+            geno_data = read_geno_data(
+                vcf=vcf_file,
+                ind_samples={population: sample_list},
+                chr_name=chr_name,
+                start=start,
+                end=end,
+                anc_allele_file=anc_allele_file,
+                filter_missing=filter_missing,
+                ploidy=ploidy,
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to read VCF data for {sample_file}, population '{population}': {e}"
+            )
+
+        if geno_data is None:
+            continue
+
+        if filter_flag:
+            geno_data = filter_fixed_variants(geno_data, {population: sample_list})
+
+        reshape_genotypes(geno_data, is_phased)
+
+        data[population] = geno_data[
+            population
+        ]  # geno_data: dict[population -> ChromosomeData]
+
+    if not data:
         return None, samples
-
-    if filter_flag:
-        data = filter_fixed_variants(data, samples)
-
-    reshape_genotypes(data, is_phased)
 
     return data, samples

@@ -23,6 +23,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from unittest.mock import mock_open, patch
+from sai.configs import PloidyConfig
 from sai.utils import ChromosomeData
 from sai.utils import filter_fixed_variants
 from sai.utils import filter_geno_data
@@ -152,38 +153,52 @@ def test_read_geno_data_from_file(data):
 
 
 def test_read_data_from_file(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
+    ploidy_config = PloidyConfig(
+        {
+            "ref": {"ref1": 2},
+            "tgt": {"tgt1": 2, "tgt2": 2},
+            "src": {"src1": 2, "src2": 2},
+        }
+    )
+
+    results = read_data(
         vcf_file=pytest.vcf,
         chr_name="21",
         ref_ind_file=pytest.ref_ind_list,
         tgt_ind_file=pytest.tgt_ind_list,
         src_ind_file=None,
+        out_ind_file=None,
         anc_allele_file=None,
         filter_ref=False,
         filter_tgt=False,
         filter_src=False,
-        ploidy=[2, 2, 2],
+        filter_out=False,
+        ploidy_config=ploidy_config,
     )
 
     rs = parse_ind_file(pytest.ref_ind_list)
     ts = parse_ind_file(pytest.tgt_ind_list)
 
-    assert np.array_equal(rs, ref_samples)
-    assert np.array_equal(ts, tgt_samples)
+    assert np.array_equal(rs, results["ref"][1])
+    assert np.array_equal(ts, results["tgt"][1])
 
     ref_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=rs["ref1"], region="21")
     tgt_vcf = allel.read_vcf(pytest.vcf, alt_number=1, samples=ts["tgt2"], region="21")
 
     assert np.array_equal(rs["ref1"], ref_vcf["samples"])
     assert np.array_equal(ts["tgt2"], tgt_vcf["samples"])
-    assert np.array_equal(ref_data["ref1"].POS, ref_vcf["variants/POS"])
-    assert np.array_equal(ref_data["ref1"].REF, ref_vcf["variants/REF"])
-    assert np.array_equal(ref_data["ref1"].ALT, ref_vcf["variants/ALT"])
-    assert np.array_equal(ref_data["ref1"].GT, ref_vcf["calldata/GT"].reshape(19, 4))
-    assert np.array_equal(tgt_data["tgt2"].POS, tgt_vcf["variants/POS"])
-    assert np.array_equal(tgt_data["tgt2"].REF, tgt_vcf["variants/REF"])
-    assert np.array_equal(tgt_data["tgt2"].ALT, tgt_vcf["variants/ALT"])
-    assert np.array_equal(tgt_data["tgt2"].GT, tgt_vcf["calldata/GT"].reshape(19, 4))
+    assert np.array_equal(results["ref"][0]["ref1"].POS, ref_vcf["variants/POS"])
+    assert np.array_equal(results["ref"][0]["ref1"].REF, ref_vcf["variants/REF"])
+    assert np.array_equal(results["ref"][0]["ref1"].ALT, ref_vcf["variants/ALT"])
+    assert np.array_equal(
+        results["ref"][0]["ref1"].GT, ref_vcf["calldata/GT"].reshape(19, 4)
+    )
+    assert np.array_equal(results["tgt"][0]["tgt2"].POS, tgt_vcf["variants/POS"])
+    assert np.array_equal(results["tgt"][0]["tgt2"].REF, tgt_vcf["variants/REF"])
+    assert np.array_equal(results["tgt"][0]["tgt2"].ALT, tgt_vcf["variants/ALT"])
+    assert np.array_equal(
+        results["tgt"][0]["tgt2"].GT, tgt_vcf["calldata/GT"].reshape(19, 4)
+    )
 
 
 def test_read_anc_allele(data):
@@ -252,16 +267,25 @@ def test_get_ref_alt_allele(data):
 
 
 def test_check_anc_allele(data):
-    ref_data, ref_samples, tgt_data, tgt_samples, src_data, src_samples = read_data(
+    ploidy_config = PloidyConfig(
+        {
+            "ref": {"ref1": 2},
+            "tgt": {"tgt1": 2, "tgt2": 2},
+            "src": {"src1": 2, "src2": 2},
+        }
+    )
+
+    data = read_data(
         vcf_file=pytest.vcf,
         chr_name="21",
         ref_ind_file=pytest.ref_ind_list,
         tgt_ind_file=pytest.tgt_ind_list,
         src_ind_file=None,
+        out_ind_file=None,
         anc_allele_file=pytest.anc_allele,
         filter_ref=False,
         filter_tgt=False,
-        ploidy=[2, 2, 2],
+        ploidy_config=ploidy_config,
     )
 
     exp_ref_gt = allel.GenotypeArray(
@@ -287,11 +311,11 @@ def test_check_anc_allele(data):
     )
     exp_tgt_pos = [2309, 7879, 48989]
 
-    assert np.array_equal(ref_data["ref1"].GT, exp_ref_gt.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt1"].GT, exp_tgt_gt1.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt2"].GT, exp_tgt_gt2.reshape(3, 4))
-    assert np.array_equal(tgt_data["tgt1"].POS, exp_tgt_pos)
-    assert np.array_equal(tgt_data["tgt2"].POS, exp_tgt_pos)
+    assert np.array_equal(data["ref"][0]["ref1"].GT, exp_ref_gt.reshape(3, 4))
+    assert np.array_equal(data["tgt"][0]["tgt1"].GT, exp_tgt_gt1.reshape(3, 4))
+    assert np.array_equal(data["tgt"][0]["tgt2"].GT, exp_tgt_gt2.reshape(3, 4))
+    assert np.array_equal(data["tgt"][0]["tgt1"].POS, exp_tgt_pos)
+    assert np.array_equal(data["tgt"][0]["tgt2"].POS, exp_tgt_pos)
 
 
 # Test data setup for filter_fixed_variants

@@ -1,0 +1,25 @@
+statistics:
+  U:
+    ref: 
+      ref1: 0.3
+    tgt: 
+      tgt1: 0.8
+      tgt2: 0.8
+    src:
+      src1: "=1"
+      src2: "=1"
+
+ploidies:
+  ref: 
+    ref1: 2
+  tgt: 
+    tgt1: 4
+    tgt2: 4
+  src:
+    src1: 4
+    src2: 4
+
+populations:
+  ref: "tests/data/test.ref.ind.list"
+  tgt: "tests/data/test.tgt.ind.list"
+  src: "tests/data/test.src.ind.list"

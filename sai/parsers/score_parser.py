@@ -19,13 +19,9 @@
 
 
 import argparse
-import re
 from sai.parsers.argument_validation import positive_int
 from sai.parsers.argument_validation import existed_file
-from sai.parsers.argument_validation import between_zero_and_one
-from sai.parsers.argument_validation import validate_stat_type
 from sai.sai import score
-from sai.utils.utils import parse_ind_file
 
 
 def _run_score(args: argparse.Namespace) -> None:
@@ -42,123 +38,34 @@ def _run_score(args: argparse.Namespace) -> None:
             Path to the VCF file containing variant data.
         - chr_name : str
             Name of the chromosome to be analyzed.
-        - ref : str
-            Path to the reference group individual file.
-        - tgt : str
-            Path to the target group individual file.
-        - src : str
-            Path to the source population individual file.
         - win_len : int
             Length of each analysis window.
         - win_step : int
             Step size for moving the window along the sequence.
-        - num_src : int
-            Number of source populations. The length of `args.y` should match `num_src`.
         - anc_alleles : str
             Path to the ancestral allele file.
-        - ploidy : list of int
-            A list of three integers specifying the ploidy of the reference, target,
-            and source populations, respectively.
-        - w : float
-            Allele frequency threshold for the reference group.
-        - y : list of float
-            List of allele frequency thresholds for each source population. Its length must match `num_src`.
         - output : str
             Path to the output file for storing results.
-        - stat_type: str
-            Specifies the type of statistic to compute.
+        - stat_config: str
+            Path to the YAML configuration file specifying the statistics, ploidy levels, and populations to compute.
 
     Raises
     ------
     ValueError
-        If the length of `args.y` does not match the expected number of source populations (`num_src`),
-        or if fewer than three ploidy values are provided,
+        If fewer than three ploidy values are provided,
         or if the number of ploidy values for source populations does not match `num_src`.
         or if other input parameters do not meet expected conditions.
     """
-    src_samples = parse_ind_file(args.src)
-    num_src = len(src_samples.keys())
-    if len(args.y) != num_src:
-        raise ValueError(
-            f"The length of y ({len(args.y)}) does not match the number of source populations ({num_src}) found in {args.src}."
-        )
-
-    if len(args.ploidy) < 3:
-        raise ValueError(
-            "At least three ploidy values must be provided: one for REF, one for TGT, and at least one for SRC."
-        )
-
-    if len(args.ploidy) - 2 != num_src:
-        raise ValueError(
-            f"The number of ploidy values for source populations ({len(args.ploidy)-2}) "
-            f"does not match the number of source populations ({num_src}) found in {args.src}."
-        )
-
     score(
         vcf_file=args.vcf,
         chr_name=args.chr_name,
-        ref_ind_file=args.ref,
-        tgt_ind_file=args.tgt,
-        src_ind_file=args.src,
         win_len=args.win_len,
         win_step=args.win_step,
-        num_src=num_src,
         anc_allele_file=args.anc_alleles,
-        ploidy=args.ploidy,
-        w=args.w,
-        y=args.y,
         output_file=args.output,
-        stat_type=args.stat,
+        config=args.config,
         num_workers=1,
     )
-
-
-def _parse_y_thresholds(value: str) -> tuple[str, float]:
-    """
-    Parses the --y parameter value to extract an operator and a numerical threshold.
-
-    This function ensures that the input is correctly formatted as one of the following:
-    - `=X`  (equality condition)
-    - `>X`  (greater than condition)
-    - `<X`  (less than condition)
-    - `>=X` (greater than or equal to condition)
-    - `<=X` (less than or equal to condition)
-
-    The numerical value `X` must be within the range [0, 1].
-
-    Parameters
-    ----------
-    value : str
-        A string representing the allele frequency threshold condition, e.g., "=0.7", ">0.8", "<=0.2".
-
-    Returns
-    -------
-    tuple[str, float]
-        A tuple containing:
-        - A string representing the comparison operator (`=`, `<`, `>`, `<=`, `>=`).
-        - A float representing the threshold value.
-
-    Raises
-    ------
-    argparse.ArgumentTypeError
-        If the input format is invalid or the numerical threshold is outside the range [0, 1].
-    """
-    match = re.match(r"^(=|<|>|<=|>=)(\d*\.?\d+)$", value)
-    if not match:
-        raise argparse.ArgumentTypeError(
-            f"Invalid format for --y: {value}. Must be in the form =X, >X, <X, >=X, or <=X "
-            f"(e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2)."
-        )
-
-    operator, num_str = match.groups()
-    num = float(num_str)
-
-    if not (0 <= num <= 1):
-        raise argparse.ArgumentTypeError(
-            f"Value for --y must be between 0 and 1, got {num}."
-        )
-
-    return operator, num
 
 
 def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
@@ -188,24 +95,6 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Chromosome name to analyze from the VCF file.",
     )
     parser.add_argument(
-        "--ref",
-        type=existed_file,
-        required=True,
-        help="Path to the file with reference population identifiers.",
-    )
-    parser.add_argument(
-        "--tgt",
-        type=existed_file,
-        required=True,
-        help="Path to the file with target population identifiers.",
-    )
-    parser.add_argument(
-        "--src",
-        type=existed_file,
-        required=True,
-        help="Path to the file with source population identifiers.",
-    )
-    parser.add_argument(
         "--win-len",
         dest="win_len",
         type=positive_int,
@@ -227,40 +116,15 @@ def add_score_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None.",
     )
     parser.add_argument(
-        "--ploidy",
-        type=positive_int,
-        nargs="+",
-        default=[2, 2, 2],
-        metavar="REF, TGT, SRC",
-        help="Ploidy values for reference, target, and one or more source populations (in that order). Example: 2 2 4 4 for one REF, one TGT, and two SRC populations. Default: 2 2 2.",
-    )
-    parser.add_argument(
-        "--w",
-        type=between_zero_and_one,
-        default=0.01,
-        help="Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01.",
-    )
-    parser.add_argument(
-        "--y",
-        type=_parse_y_thresholds,
-        nargs="+",
-        default=[("=", 1.0)],
-        help="List of allele frequency conditions for the source populations. "
-        "Each value must be in the form =X, >X, <X, >=X, or <=X "
-        "(e.g., =0.7, >0.8, <0.1, >=0.5, <=0.2). "
-        "The number of values must match the number of source populations in the file specified by `--src`; "
-        "the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1",
-    )
-    parser.add_argument(
         "--output",
         type=str,
         required=True,
         help="Output file path for saving results.",
     )
     parser.add_argument(
-        "--stat",
-        type=validate_stat_type,
+        "--config",
+        type=existed_file,
         required=True,
-        help="Type of statistic to compute: UXX or QXX, where XX is a percentage-like index indicating a threshold in the target population. For example, `U50` means the allele frequency is greater than 0.5, and `Q95` means the allele frequency is greater than or equal to the 95th percentile among sites meeting the specified conditions.",
+        help="Path to the YAML configuration file specifying the statistics to compute, ploidy settings, and population group file paths.",
     )
     parser.set_defaults(runner=_run_score)

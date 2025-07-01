@@ -1,0 +1,21 @@
+statistics:
+  Q:
+    ref: 
+      AFR: 0.3
+    tgt: 
+      CHB: 0.95
+    src:
+      Nean: "=1"
+
+ploidies:
+  ref: 
+    AFR: 2
+  tgt: 
+    CHB: 2
+  src:
+    Nean: 2
+
+populations:
+  ref: "tests/data/example.ref.ind.list"
+  tgt: "tests/data/example.tgt.ind.list"
+  src: "tests/data/example.src.ind.list"

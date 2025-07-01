@@ -1,0 +1,36 @@
+statistics:
+  Danc: {}
+  DD: {}
+  Dplus: {}
+  df: {}
+  fd: {}
+  U:
+    ref: 
+      AFR+EAS: 0.01
+    tgt: 
+      EUR: 0.5
+    src:
+      NEA: "=1"
+      DEN: "=1"
+  Q:
+    ref: 
+      AFR+EAS: 0.01
+    tgt: 
+      EUR: 0.95
+    src:
+      NEA: "=1"
+      DEN: "=1"
+
+ploidies:
+  ref:
+    AFR+EAS: 2
+  tgt:
+    EUR: 2
+  src:
+    NEA: 2
+    DEN: 2
+
+populations:
+  ref: "examples/data/1KG.ref.samples.txt"
+  tgt: "examples/data/1KG.tgt.samples.txt"
+  src: "examples/data/1KG.nea_den.samples.txt"

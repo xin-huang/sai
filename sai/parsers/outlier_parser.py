@@ -37,7 +37,7 @@ def _run_outlier(args: argparse.Namespace) -> None:
     # Call the outlier function with parsed arguments
     outlier(
         score_file=args.score,
-        output=args.output,
+        output_prefix=args.output_prefix,
         quantile=args.quantile,
     )
 
@@ -62,10 +62,11 @@ def add_outlier_parser(subparsers: argparse.ArgumentParser) -> None:
         help="Path to the input score file.",
     )
     parser.add_argument(
-        "--output",
+        "--output-prefix",
+        dest="output_prefix",
         type=str,
         required=True,
-        help="Path to save the output file.",
+        help="Prefix of the output files.",
     )
     parser.add_argument(
         "--quantile",
