@@ -518,7 +518,7 @@ DEN Denisova
 </code></pre></div>
 
 <p>This file specifies the individuals in the source populations. In this example, there are two source populations, NEA and DEN (first column), and the second column lists the corresponding sample names matching those in the VCF header.</p>
-<p>A configuration file in <a href="https://yaml.org/">YAML format</a> is required to specify the statistics to compute, ploidy settings, and population group file paths. An example can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.both.config.yaml">here</a>. In the example below, the <code>statistics</code> section lists which statistics will be computed. Empty braces (<code>{}</code>) indicate that no additional parameters are required for that statistic, while entries such as $U$ and $Q$ specify reference (<code>ref</code>), target (<code>tgt</code>), and source (<code>src</code>) populations with filtering conditions. The <code>ploidies</code> section defines the ploidy level for each population, typically 2 for diploids. The populations section provides file paths to sample lists that assign individuals to each population.</p>
+<p>A configuration file in <a href="https://yaml.org/">YAML format</a> is required to specify the statistics to compute, ploidy settings, and population group file paths. An example can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.both.config.yaml">here</a>. In the example below, the <code>statistics</code> section lists which statistics will be computed. Empty braces (<code>{}</code>) indicate that no additional parameters are required for that statistic, while entries such as <span class="arithmatex">\(U\)</span> and <span class="arithmatex">\(Q\)</span> specify reference (<code>ref</code>), target (<code>tgt</code>), and source (<code>src</code>) populations with filtering conditions. The <code>ploidies</code> section defines the ploidy level for each population, typically 2 for diploids. The populations section provides file paths to sample lists that assign individuals to each population.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
 <span class="w">  </span><span class="n">Danc</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
 <span class="w">  </span><span class="n">DD</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
@@ -898,51 +898,51 @@ DEN Denisova
 </tr>
 <tr>
 <td>Danc.src1</td>
-<td>Value of the $D_{anc}$ statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src1 as the source population</td>
 </tr>
 <tr>
 <td>Danc.src2</td>
-<td>Value of the $D_{anc}$ statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src2 as the source population</td>
 </tr>
 <tr>
 <td>DD.src1</td>
-<td>Value of the $D_D$ statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src1 as the source population</td>
 </tr>
 <tr>
 <td>DD.src2</td>
-<td>Value of the $D_D$ statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src2 as the source population</td>
 </tr>
 <tr>
 <td>Dplus.src1</td>
-<td>Value of the $D^+$ statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src1 as the source population</td>
 </tr>
 <tr>
 <td>Dplus.src2</td>
-<td>Value of the $D^+$ statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src2 as the source population</td>
 </tr>
 <tr>
 <td>df.src1</td>
-<td>Value of the $d_f$ statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src1 as the source population</td>
 </tr>
 <tr>
 <td>df.src2</td>
-<td>Value of the $d_f$ statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src2 as the source population</td>
 </tr>
 <tr>
 <td>fd.src1</td>
-<td>Value of the $f_d$ statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src1 as the source population</td>
 </tr>
 <tr>
 <td>fd.src2</td>
-<td>Value of the $f_d$ statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src2 as the source population</td>
 </tr>
 <tr>
 <td>U</td>
-<td>Value of the $U$ statistic using both src1 and src2 as the source populations</td>
+<td>Value of the <span class="arithmatex">\(U\)</span> statistic using both src1 and src2 as the source populations</td>
 </tr>
 <tr>
 <td>Q</td>
-<td>Value of the $Q$ statistic using both src1 and src2 as the source populations</td>
+<td>Value of the <span class="arithmatex">\(Q\)</span> statistic using both src1 and src2 as the source populations</td>
 </tr>
 </tbody>
 </table>
@@ -958,7 +958,7 @@ DEN Denisova
 </code></pre></div>
 
 <p>We provide a BED file to specify the ancestral allele for each variant, based on alignments from <a href="https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/">Ensembl</a>.
-In this example, for the $U$ statistic, the <code>ref</code> entry in the configuration file specifies that the allele frequency must be less than 0.01 in the AFR+EAS population, the <code>src</code> entries require the allele to be fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes, and the <code>tgt</code> entry indicates that the allele frequency must be greater than 0.5 in the EUR population. Similarly, for the $Q$ statistic, the <code>tgt</code> entry specifies the quantile of the derived allele frequencies in the EUR population at 0.95. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv">here</a>.</p>
+In this example, for the <span class="arithmatex">\(U\)</span> statistic, the <code>ref</code> entry in the configuration file specifies that the allele frequency must be less than 0.01 in the AFR+EAS population, the <code>src</code> entries require the allele to be fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes, and the <code>tgt</code> entry indicates that the allele frequency must be greater than 0.5 in the EUR population. Similarly, for the <span class="arithmatex">\(Q\)</span> statistic, the <code>tgt</code> entry specifies the quantile of the derived allele frequencies in the EUR population at 0.95. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv">here</a>.</p>
 <p>The <code>src</code> entries can be set as Nea: "=1", Den: "=0" or the reverse to identify lineage-specific variants:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
 <span class="w">  </span><span class="n">U</span><span class="o">:</span>
@@ -979,8 +979,8 @@ In this example, for the $U$ statistic, the <code>ref</code> entry in the config
 <span class="w">      </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=0&quot;</span>
 </code></pre></div>
 
-<p>An example configuration file for Neanderthal-specific introgressed variants can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.nea.specific.config.yaml">here</a>, with its corresponding output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/nea_specific/1KG.nea_den.chr9.example.nea.specific.stats.scores.tsv">here</a>. Similarly, an example configuration file for Denisovan-specific introgressed variants is provided <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.den.specific.config.yaml">here</a>, with the output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/den_specific/1KG.nea_den.chr9.example.den.specific.stats.scores.tsv">here</a>. Note that only the $U$ and $Q$ statistics support multi-source introgression filtering.</p>
-<p>In addition, log files corresponding to the $U$ or $Q$ statistics are generated to record the positions of variants used in their calculation. An example is shown below:</p>
+<p>An example configuration file for Neanderthal-specific introgressed variants can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.nea.specific.config.yaml">here</a>, with its corresponding output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/nea_specific/1KG.nea_den.chr9.example.nea.specific.stats.scores.tsv">here</a>. Similarly, an example configuration file for Denisovan-specific introgressed variants is provided <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.den.specific.config.yaml">here</a>, with the output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/den_specific/1KG.nea_den.chr9.example.den.specific.stats.scores.tsv">here</a>. Note that only the <span class="arithmatex">\(U\)</span> and <span class="arithmatex">\(Q\)</span> statistics support multi-source introgression filtering.</p>
+<p>In addition, log files corresponding to the <span class="arithmatex">\(U\)</span> or <span class="arithmatex">\(Q\)</span> statistics are generated to record the positions of variants used in their calculation. An example is shown below:</p>
 <table>
 <thead>
 <tr>
@@ -1122,7 +1122,9 @@ In this example, for the $U$ statistic, the <code>ref</code> entry in the config
     
       <script src="../../assets/javascripts/bundle.525ec568.min.js"></script>
       
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>

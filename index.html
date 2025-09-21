@@ -460,11 +460,11 @@
 <h1 id="sai">SAI</h1>
 <p><code>sai</code> is a Python package for <strong>S</strong>tatistics for <strong>A</strong>daptive <strong>I</strong>ntrogression. It detects candidate regions of adaptive introgression from population genomic datasets. Currently, it supports:</p>
 <ul>
-<li>The average difference of squence divergence ($D_D$ statistic) proposed by Huang et al. (2025).</li>
-<li>The $D^+$ and $D_{anc}$ statistics proposed by <a href="https://doi.org/10.1371/journal.pgen.1010155">Fang et al. (2024)</a>.</li>
-<li>The distance fraction ($d_f$ statistic) proposed by <a href="https://doi.org/10.1186/s12859-019-2747-z">Pfeifer and Kapan (2019)</a>.</li>
-<li>The number of uniquely shared sites ($U$ statistic) and the quantile of the derived allele frequencies in such sites ($Q$ statistic) proposed by <a href="https://doi.org/10.1093/molbev/msw216">Racimo et al. (2017)</a>.</li>
-<li>The dynamic estimator of the proportion of introgression ($f_d$ statistic) proposed by <a href="https://doi.org/10.1093/molbev/msu269">Martin et al. (2015)</a>.</li>
+<li>The average difference of squence divergence (<span class="arithmatex">\(D_D\)</span> statistic) proposed by Huang et al. (2025).</li>
+<li>The <span class="arithmatex">\(D^+\)</span> and <span class="arithmatex">\(D_{anc}\)</span> statistics proposed by <a href="https://doi.org/10.1371/journal.pgen.1010155">Fang et al. (2024)</a>.</li>
+<li>The distance fraction (<span class="arithmatex">\(d_f\)</span> statistic) proposed by <a href="https://doi.org/10.1186/s12859-019-2747-z">Pfeifer and Kapan (2019)</a>.</li>
+<li>The number of uniquely shared sites (<span class="arithmatex">\(U\)</span> statistic) and the quantile of the derived allele frequencies in such sites (<span class="arithmatex">\(Q\)</span> statistic) proposed by <a href="https://doi.org/10.1093/molbev/msw216">Racimo et al. (2017)</a>.</li>
+<li>The dynamic estimator of the proportion of introgression (<span class="arithmatex">\(f_d\)</span> statistic) proposed by <a href="https://doi.org/10.1093/molbev/msu269">Martin et al. (2015)</a>.</li>
 </ul>
 <p><code>sai</code> does not require phased data, and supports an arbitrary number of source/donor populations (i.e., populations assumed to provide introgressed material) and arbitrary ploidy.</p>
 <h2 id="requirements">Requirements</h2>
@@ -570,7 +570,9 @@ pip install .
     
       <script src="assets/javascripts/bundle.525ec568.min.js"></script>
       
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>
