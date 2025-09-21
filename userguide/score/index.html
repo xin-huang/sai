@@ -386,27 +386,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../plot/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Make Plots
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -483,7 +462,7 @@
 
 
 <h1 id="calculate-statistics">Calculate Statistics</h1>
-<p><code>sai</code> provides the <code>score</code> command to calculate the number of uniquely shared sites (U statistic) and the quantile of the allele frequencies in such sites (Q statistic).</p>
+<p><code>sai</code> provides the <code>score</code> command to calculate different statistics.</p>
 <p>To see available options, we can use the following command:</p>
 <div class="codehilite"><pre><span></span><code>sai score -h
 </code></pre></div>
@@ -510,18 +489,6 @@
 <td>Chromosome name to analyze from the VCF file.</td>
 </tr>
 <tr>
-<td>--ref</td>
-<td>Path to the file with reference population identifiers.</td>
-</tr>
-<tr>
-<td>--tgt</td>
-<td>Path to the file with target population identifiers.</td>
-</tr>
-<tr>
-<td>--src</td>
-<td>Path to the file with source population identifiers.</td>
-</tr>
-<tr>
 <td>--win-len</td>
 <td>Length of each genomic window in base pairs. Default: 50,000.</td>
 </tr>
@@ -534,20 +501,12 @@
 <td>Path to the BED file with ancestral allele information. If ancestral allele information is not provided, filtering will be performed for each variant based on whether the allele frequency of any allele (assuming biallelic) meets the specified condition during the calculation of the statistics. Default: None.</td>
 </tr>
 <tr>
-<td>--w</td>
-<td>Frequency threshold for variants in the reference population; only variants with frequencies below this threshold are included in the analysis. Default: 0.01.</td>
-</tr>
-<tr>
-<td>--y</td>
-<td>List of allele frequency conditions for the source populations. Each value must be in the form =X, &gt;X, <X, >=X, or &lt;=X (e.g., =0.7, &gt;0.8, &lt;0.1, &gt;=0.5, &lt;=0.2). The number of values must match the number of source populations in the file specified by <code>--src</code>; the order of the allele frequency conditions should also correspond to the order of source populations in that file. Default: =1.</td>
-</tr>
-<tr>
 <td>--output</td>
 <td>Output file path for saving results.</td>
 </tr>
 <tr>
-<td>--stat</td>
-<td>Type of statistic to compute: UXX or QXX, where XX is a percentage-like index indicating a threshold in the target population. For example, <code>U50</code> means the allele frequency is greater than 0.5, and <code>Q95</code> means the allele frequency is greater than or equal to the 95th percentile among sites meeting the specified conditions.</td>
+<td>--config</td>
+<td>Path to the YAML configuration file specifying the statistics to compute, ploidy settings, and population group file paths.</td>
 </tr>
 </tbody>
 </table>
@@ -559,8 +518,47 @@ DEN Denisova
 </code></pre></div>
 
 <p>This file specifies the individuals in the source populations. In this example, there are two source populations, NEA and DEN (first column), and the second column lists the corresponding sample names matching those in the VCF header.</p>
+<p>A configuration file in <a href="https://yaml.org/">YAML format</a> is required to specify the statistics to compute, ploidy settings, and population group file paths. An example can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.both.config.yaml">here</a>. In the example below, the <code>statistics</code> section lists which statistics will be computed. Empty braces (<code>{}</code>) indicate that no additional parameters are required for that statistic, while entries such as $U$ and $Q$ specify reference (<code>ref</code>), target (<code>tgt</code>), and source (<code>src</code>) populations with filtering conditions. The <code>ploidies</code> section defines the ploidy level for each population, typically 2 for diploids. The populations section provides file paths to sample lists that assign individuals to each population.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
+<span class="w">  </span><span class="n">Danc</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">DD</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">Dplus</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">df</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">fd</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">U</span><span class="o">:</span>
+<span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="w">    </span><span class="n">tgt</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">EUR</span><span class="o">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="n">src</span><span class="o">:</span>
+<span class="w">      </span><span class="n">NEA</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+<span class="w">      </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+<span class="w">  </span><span class="n">Q</span><span class="o">:</span>
+<span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="w">    </span><span class="n">tgt</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">EUR</span><span class="o">:</span><span class="w"> </span><span class="mf">0.95</span>
+<span class="w">    </span><span class="n">src</span><span class="o">:</span>
+<span class="w">      </span><span class="n">NEA</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+<span class="w">      </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+
+<span class="n">ploidies</span><span class="o">:</span>
+<span class="w">  </span><span class="n">ref</span><span class="o">:</span>
+<span class="w">    </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">  </span><span class="n">tgt</span><span class="o">:</span>
+<span class="w">    </span><span class="n">EUR</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">  </span><span class="n">src</span><span class="o">:</span>
+<span class="w">    </span><span class="n">NEA</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">    </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span>
+
+<span class="n">populations</span><span class="o">:</span>
+<span class="w">  </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;examples/data/1KG.ref.samples.txt&quot;</span>
+<span class="w">  </span><span class="n">tgt</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;examples/data/1KG.tgt.samples.txt&quot;</span>
+<span class="w">  </span><span class="n">src</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;examples/data/1KG.nea_den.samples.txt&quot;</span>
+</code></pre></div>
+
 <h2 id="output-files">Output files</h2>
-<p>An example output of the U statistic calculation is shown below.</p>
+<p>An example output is shown below.</p>
 <table>
 <thead>
 <tr>
@@ -571,8 +569,18 @@ DEN Denisova
 <th>Tgt</th>
 <th>Src</th>
 <th>N(Variants)</th>
-<th>U50</th>
-<th>Candidate</th>
+<th>Danc.NEA</th>
+<th>Danc.DEN</th>
+<th>DD.NEA</th>
+<th>DD.DEN</th>
+<th>Dplus.NEA</th>
+<th>Dplus.DEN</th>
+<th>df.NEA</th>
+<th>df.DEN</th>
+<th>fd.NEA</th>
+<th>fd.DEN</th>
+<th>U</th>
+<th>Q</th>
 </tr>
 </thead>
 <tbody>
@@ -584,8 +592,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1082</td>
+<td>-0.12355029565477203</td>
+<td>-0.09559566661094993</td>
+<td>-7.478853072043918</td>
+<td>-4.739448231247437</td>
+<td>-0.14512264357342178</td>
+<td>-0.09212831462235394</td>
+<td>-0.021122428026740657</td>
+<td>-0.005965214141977462</td>
+<td>-0.03412663364767112</td>
+<td>-0.011254553402083362</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 <tr>
 <td>9</td>
@@ -595,8 +613,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>983</td>
+<td>0.23853287087522393</td>
+<td>0.09720568452718485</td>
+<td>15.824720328820732</td>
+<td>2.6519198302249976</td>
+<td>0.24254139814192216</td>
+<td>0.04198624490861517</td>
+<td>0.06679895300702358</td>
+<td>-0.027612395797831944</td>
+<td>0.09662599519731511</td>
+<td>-0.06072062935032934</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 <tr>
 <td>9</td>
@@ -606,8 +634,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>985</td>
+<td>0.11191758509638665</td>
+<td>0.1371820707366662</td>
+<td>4.845944176212569</td>
+<td>6.488856543280008</td>
+<td>0.08062408365129729</td>
+<td>0.10781131967371557</td>
+<td>-0.0059518440634471394</td>
+<td>0.006339448215182395</td>
+<td>-0.009777268672625093</td>
+<td>0.011579864693126562</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 <tr>
 <td>9</td>
@@ -617,8 +655,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>966</td>
+<td>0.008890710141582193</td>
+<td>0.0017874385890340458</td>
+<td>-3.2895208116381127</td>
+<td>-3.762141437091735</td>
+<td>-0.07409036881532824</td>
+<td>-0.08473527378923923</td>
+<td>-0.08168801665077327</td>
+<td>-0.0882036818431493</td>
+<td>-0.10989219575082872</td>
+<td>-0.11581875355584634</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 <tr>
 <td>9</td>
@@ -628,8 +676,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1029</td>
+<td>0.0024719610094924406</td>
+<td>0.013019347645432937</td>
+<td>-3.0949185837356765</td>
+<td>-2.3295899207926993</td>
+<td>-0.07022371194458008</td>
+<td>-0.05285840228768851</td>
+<td>-0.024174513563260166</td>
+<td>-0.021736551375934953</td>
+<td>-0.05323265434587958</td>
+<td>-0.051743268070762606</td>
 <td>0</td>
-<td>NA</td>
+<td>0.0008946322067594431</td>
 </tr>
 <tr>
 <td>9</td>
@@ -639,8 +697,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1063</td>
+<td>0.022253891584592442</td>
+<td>-0.05846778040121223</td>
+<td>3.258157404777677</td>
+<td>-3.199939253368683</td>
+<td>0.07998846049314343</td>
+<td>-0.06970294049702096</td>
+<td>0.025940599557366877</td>
+<td>-0.0056209360304606635</td>
+<td>0.10418231535859726</td>
+<td>-0.01922836158621726</td>
 <td>0</td>
-<td>NA</td>
+<td>0.0</td>
 </tr>
 <tr>
 <td>9</td>
@@ -650,8 +718,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1153</td>
+<td>0.10931478521694758</td>
+<td>-0.02727035560668536</td>
+<td>11.405249061188428</td>
+<td>-2.9954578087033354</td>
+<td>0.17733519261177239</td>
+<td>-0.04657505369825686</td>
+<td>0.07092801200718006</td>
+<td>-0.01271958977736748</td>
+<td>0.14831905506347323</td>
+<td>-0.0603694010038118</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 <tr>
 <td>9</td>
@@ -661,8 +739,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>999</td>
+<td>0.15113133237922183</td>
+<td>0.14710421254212552</td>
+<td>18.309291078923295</td>
+<td>17.05495597841523</td>
+<td>0.25761194634556367</td>
+<td>0.24391495232933705</td>
+<td>0.1898707100981595</td>
+<td>0.17809065689988668</td>
+<td>0.22245899486649723</td>
+<td>0.3768632297159813</td>
 <td>1</td>
-<td>9:16715657</td>
+<td>0.6282306163021869</td>
 </tr>
 <tr>
 <td>9</td>
@@ -672,8 +760,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1007</td>
+<td>0.4129294073240463</td>
+<td>0.20572780178794584</td>
+<td>53.56721772539367</td>
+<td>29.49165522736596</td>
+<td>0.49454474017007327</td>
+<td>0.2692256133787326</td>
+<td>0.45835432326244324</td>
+<td>0.2539470613190382</td>
+<td>0.5958374858338679</td>
+<td>0.354370074530527</td>
 <td>2</td>
-<td>9:16758710,9:16759357</td>
+<td>0.6828528827037773</td>
 </tr>
 <tr>
 <td>9</td>
@@ -683,8 +781,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>1060</td>
+<td>0.40683688578049354</td>
+<td>0.1438067334121798</td>
+<td>40.19722340559816</td>
+<td>16.581497128341063</td>
+<td>0.5263549295804029</td>
+<td>0.2153953867869153</td>
+<td>0.5848435316604244</td>
+<td>0.21982990433919478</td>
+<td>0.5444309862037052</td>
+<td>0.23506396309346742</td>
 <td>1</td>
-<td>9:16770229</td>
+<td>0.6988071570576541</td>
 </tr>
 <tr>
 <td>9</td>
@@ -694,8 +802,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>960</td>
+<td>0.40565740562034003</td>
+<td>0.22930692442169218</td>
+<td>24.16718735207801</td>
+<td>13.914000126226764</td>
+<td>0.5158532156040262</td>
+<td>0.29611831851629133</td>
+<td>0.3520651233378468</td>
+<td>0.1984114833463481</td>
+<td>0.6411180111472388</td>
+<td>0.5318202119747509</td>
 <td>1</td>
-<td>9:16800789</td>
+<td>0.7176938369781312</td>
 </tr>
 <tr>
 <td>9</td>
@@ -705,8 +823,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>923</td>
+<td>0.21619895332973812</td>
+<td>0.19275643241641574</td>
+<td>12.284513159140396</td>
+<td>10.489264807977534</td>
+<td>0.22271722145226366</td>
+<td>0.19016951529508055</td>
+<td>0.09059952770351988</td>
+<td>0.058657408877032656</td>
+<td>0.08230019337435454</td>
+<td>0.06443318954095166</td>
 <td>0</td>
-<td>NA</td>
+<td>0.15382703777335985</td>
 </tr>
 <tr>
 <td>9</td>
@@ -716,8 +844,18 @@ DEN Denisova
 <td>EUR</td>
 <td>NEA,DEN</td>
 <td>512</td>
+<td>0.3881193782134191</td>
+<td>0.3589872405156586</td>
+<td>20.739761825870175</td>
+<td>19.506952333617342</td>
+<td>0.48085645624316853</td>
+<td>0.4522734663012016</td>
+<td>0.5199698990819357</td>
+<td>0.5044977777777778</td>
+<td>0.47736503902045885</td>
+<td>0.55657933398083</td>
 <td>0</td>
-<td>NA</td>
+<td>nan</td>
 </tr>
 </tbody>
 </table>
@@ -759,68 +897,180 @@ DEN Denisova
 <td>Number of variants found in this genomic window. Sites with missing genotypes in any population are excluded. If ancestral allele information is provided, variants whose ancestral allele differ from both the reference and alternative allele in the VCF file are also excluded.</td>
 </tr>
 <tr>
-<td>UXX or QXX</td>
-<td>Number of uniquely shared sites or the quantile statistic in this window.</td>
+<td>Danc.src1</td>
+<td>Value of the $D_{anc}$ statistic using src1 as the source population</td>
 </tr>
 <tr>
-<td>Candidate</td>
-<td>Variant(s) (<code>chrom:pos</code>) that meet the specified condition. For the U statistic, this refers to variant(s) whose allele frequency in the reference population is below a specified threshold, allele frequency in the target population exceeds a specified threshold, and allele frequency in the source population meets a defined condition (e.g., fixed). For the Q statistic, this refers to variant(s) that satisfy the following three conditions: (1) the allele frequency in the reference population is below a specified threshold; (2) the allele frequency in the source population meets a defined condition (e.g., fixed); and (3) among all variants meeting (1) and (2), the allele frequency in the target population is greater than or equal to a specified percentile (e.g., the 95th percentile) within this subset of variants in the window.</td>
+<td>Danc.src2</td>
+<td>Value of the $D_{anc}$ statistic using src2 as the source population</td>
+</tr>
+<tr>
+<td>DD.src1</td>
+<td>Value of the $D_D$ statistic using src1 as the source population</td>
+</tr>
+<tr>
+<td>DD.src2</td>
+<td>Value of the $D_D$ statistic using src2 as the source population</td>
+</tr>
+<tr>
+<td>Dplus.src1</td>
+<td>Value of the $D^+$ statistic using src1 as the source population</td>
+</tr>
+<tr>
+<td>Dplus.src2</td>
+<td>Value of the $D^+$ statistic using src2 as the source population</td>
+</tr>
+<tr>
+<td>df.src1</td>
+<td>Value of the $d_f$ statistic using src1 as the source population</td>
+</tr>
+<tr>
+<td>df.src2</td>
+<td>Value of the $d_f$ statistic using src2 as the source population</td>
+</tr>
+<tr>
+<td>fd.src1</td>
+<td>Value of the $f_d$ statistic using src1 as the source population</td>
+</tr>
+<tr>
+<td>fd.src2</td>
+<td>Value of the $f_d$ statistic using src2 as the source population</td>
+</tr>
+<tr>
+<td>U</td>
+<td>Value of the $U$ statistic using both src1 and src2 as the source populations</td>
+</tr>
+<tr>
+<td>Q</td>
+<td>Value of the $Q$ statistic using both src1 and src2 as the source populations</td>
 </tr>
 </tbody>
 </table>
 <h2 id="examples">Examples</h2>
-<p>The following example estimates the U statistic using biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400001-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, LWK, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CDX, CHB, CHS, JPT, KHV). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
+<p>The following example estimates all the statistics defined by the example configuration above with biallelic single nucleotide polymorphisms (SNPs) in the region <code>chr9:16400001-16900000</code> from <a href="https://ftp.ncbi.nih.gov/1000genomes/ftp/release/20130502/">the 1000 Genomes Project</a>. The Neanderthal genome was obtained from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Altai/">here</a>, and the Denisovan genome from <a href="http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Denisova/">here</a>. The reference population includes all African populations (ESN, GWD, LWK, MSL, YRI), excluding the admixed African populations (ACB and ASW), and all East Asian populations (CDX, CHB, CHS, JPT, KHV). The target population consists of all European populations (CEU, FIN, GBR, IBS, TSI). The source populations comprise one Neanderthal individual (AltaiNeandertal) and one Denisovan individual (Denisova).</p>
 <p>To detect adaptively introgressed variants from <strong>both Neanderthals and Denisovans</strong>, we can use the following command:</p>
 <div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
-          --ref examples/data/1KG.ref.samples.txt \
-          --tgt examples/data/1KG.tgt.samples.txt \
-          --src examples/data/1KG.nea_den.samples.txt \
           --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U50 --w 0.01 --y =1 =1 \
+          --chr-name 9 \
           --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv
+          --config examples/data/1KG.nea_den.chr9.example.both.config.yaml \
+          --output examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv
 </code></pre></div>
 
 <p>We provide a BED file to specify the ancestral allele for each variant, based on alignments from <a href="https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/">Ensembl</a>.
-In this example, the <code>--w</code>, and <code>--y</code> arguments define the filtering conditions: the allele frequency of a variant must be less than 0.01 in the reference population and fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes. The <code>50</code> in <code>--stat U50</code> indicates that the allele frequency must be greater than 0.5 in the target population. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv">here</a>.</p>
-<p>To estimate the Q95 statistic for the same data, simply change <code>--stat U50</code> to <code>--stat Q95</code>:</p>
-<div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
-          --ref examples/data/1KG.ref.samples.txt \
-          --tgt examples/data/1KG.tgt.samples.txt \
-          --src examples/data/1KG.nea_den.samples.txt \
-          --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat Q95 --w 0.01 --y =1 =1 \
-          --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv
+In this example, for the $U$ statistic, the <code>ref</code> entry in the configuration file specifies that the allele frequency must be less than 0.01 in the AFR+EAS population, the <code>src</code> entries require the allele to be fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes, and the <code>tgt</code> entry indicates that the allele frequency must be greater than 0.5 in the EUR population. Similarly, for the $Q$ statistic, the <code>tgt</code> entry specifies the quantile of the derived allele frequencies in the EUR population at 0.95. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv">here</a>.</p>
+<p>The <code>src</code> entries can be set as Nea: "=1", Den: "=0" or the reverse to identify lineage-specific variants:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
+<span class="w">  </span><span class="n">U</span><span class="o">:</span>
+<span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="w">    </span><span class="n">tgt</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">EUR</span><span class="o">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="n">src</span><span class="o">:</span>
+<span class="w">      </span><span class="n">NEA</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+<span class="w">      </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=0&quot;</span>
+<span class="w">  </span><span class="n">Q</span><span class="o">:</span>
+<span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="w">    </span><span class="n">tgt</span><span class="o">:</span><span class="w"> </span>
+<span class="w">      </span><span class="n">EUR</span><span class="o">:</span><span class="w"> </span><span class="mf">0.95</span>
+<span class="w">    </span><span class="n">src</span><span class="o">:</span>
+<span class="w">      </span><span class="n">NEA</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=1&quot;</span>
+<span class="w">      </span><span class="n">DEN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;=0&quot;</span>
 </code></pre></div>
 
-<p>The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.Q95.scores.tsv">here</a>.</p>
-<p>To detect adaptively introgressed variants from <strong>Neanderthal introgression only</strong>, we can use:</p>
-<div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
-          --ref examples/data/1KG.ref.samples.txt \
-          --tgt examples/data/1KG.tgt.samples.txt \
-          --src examples/data/1KG.nea_den.samples.txt \
-          --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U50 --w 0.01 --y =1 =0 \
-          --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv
-</code></pre></div>
-
-<p>Here, we set <code>--y =1 =0</code> to require that the variant be fixed in the Neanderthal individual and absent in the Denisovan. This ensures that only Neanderthal-specific variants are considered as potential candidates for introgression. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.nea.specific.U50.scores.tsv">here</a>.</p>
-<p>To detect adaptively introgressed variants from <strong>Denisovan introgression only</strong>, we can use:</p>
-<div class="codehilite"><pre><span></span><code>sai score --vcf examples/data/1KG.nea_den.chr9.example.vcf.gz \
-          --ref examples/data/1KG.ref.samples.txt \
-          --tgt examples/data/1KG.tgt.samples.txt \
-          --src examples/data/1KG.nea_den.samples.txt \
-          --anc-alleles examples/data/hg19.chr9.example.anc.alleles.bed \
-          --chr-name 9 --stat U50 --w 0.01 --y =0 =1 \
-          --win-len 40000 --win-step 40000 \
-          --output examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv
-</code></pre></div>
-
-<p>In this case, <code>--y =0 =1</code> requires that the variant be fixed in the Denisovan individual and absent in the Neanderthal, thereby identifying variants potentially introgressed from Denisovans only. The output can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.den.specific.U50.scores.tsv">here</a>.</p>
-<p>Any number of source populations is supported, including one, two, or more. However, note that the order of values provided to <code>--y</code> must match the order of source populations as specified in the file given by <code>--src</code>. For example, in <code>examples/data/1KG.nea_den.samples.txt</code>, the first source population is Neanderthal and the second is Denisovan. Therefore, <code>--y =1 =0</code> specifies that the variant must be fixed in Neanderthals and absent in Denisovans, while <code>--y =0 =1</code> specifies the reverse.</p>
-<p>Providing <code>--y</code> values in the wrong order (e.g., reversing the values without changing the order of the populations in <code>--src</code>) will result in incorrect interpretation of source-specific introgression signals.</p>
+<p>An example configuration file for Neanderthal-specific introgressed variants can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.nea.specific.config.yaml">here</a>, with its corresponding output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/nea_specific/1KG.nea_den.chr9.example.nea.specific.stats.scores.tsv">here</a>. Similarly, an example configuration file for Denisovan-specific introgressed variants is provided <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.den.specific.config.yaml">here</a>, with the output available <a href="https://github.com/xin-huang/sai/blob/main/examples/results/den_specific/1KG.nea_den.chr9.example.den.specific.stats.scores.tsv">here</a>. Note that only the $U$ and $Q$ statistics support multi-source introgression filtering.</p>
+<p>In addition, log files corresponding to the $U$ or $Q$ statistics are generated to record the positions of variants used in their calculation. An example is shown below:</p>
+<table>
+<thead>
+<tr>
+<th>Chrom</th>
+<th>Start</th>
+<th>End</th>
+<th>U_SNP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9</td>
+<td>16400001</td>
+<td>16440000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16440001</td>
+<td>16480000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16480001</td>
+<td>16520000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16520001</td>
+<td>16560000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16560001</td>
+<td>16600000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16600001</td>
+<td>16640000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16640001</td>
+<td>16680000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16680001</td>
+<td>16720000</td>
+<td>9:16715657</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16720001</td>
+<td>16760000</td>
+<td>9:16758710,9:16759357</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16760001</td>
+<td>16800000</td>
+<td>9:16770229</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16800001</td>
+<td>16840000</td>
+<td>9:16800789</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16840001</td>
+<td>16880000</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>9</td>
+<td>16880001</td>
+<td>16920000</td>
+<td>NA</td>
+</tr>
+</tbody>
+</table>
 
 
 

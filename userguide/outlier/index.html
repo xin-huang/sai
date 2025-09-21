@@ -14,8 +14,6 @@
         <link rel="prev" href="../score/">
       
       
-        <link rel="next" href="../plot/">
-      
       
       <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.40">
@@ -386,27 +384,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../plot/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Make Plots
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -506,8 +483,8 @@
 <td>Path to the input score file.</td>
 </tr>
 <tr>
-<td>--output</td>
-<td>Path to save the output file.</td>
+<td>--output-prefix</td>
+<td>Prefix of the output files.</td>
 </tr>
 <tr>
 <td>--quantile</td>
@@ -521,12 +498,13 @@
 <p>The output file has the same format as that of the <code>score</code> command.</p>
 <h2 id="examples">Examples</h2>
 <p>To extract outliers from the output of the previous score example, we can use the following command:</p>
-<div class="codehilite"><pre><span></span><code>sai outlier --score examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv \
-            --output examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv \
-            --quantile 0.99
+<div class="codehilite"><pre><span></span><code>sai outlier --score examples/results/both/1KG.nea_den.chr9.example.both.stats.tsv \
+            --output-prefix examples/results/both/1KG.nea_den.chr9.example.both.stats \ 
+            --quantile 0.9
 </code></pre></div>
 
-<p>This identifies candidate introgressed regions from both Neanderthals and Denisovans by selecting windows with U statistic values above the 0.99 quantile in the <code>score</code> command output. The result can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv">here</a>.</p>
+<p>This will produce separate outlier files for each statistic (e.g., $U$, $Q$, $D^+$), containing candidate introgressed regions that exceed the 0.9 quantile threshold.
+Examples can be found <a href="https://github.com/xin-huang/sai/tree/main/examples/results/both">here</a>.</p>
 
 
 
