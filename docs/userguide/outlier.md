@@ -14,7 +14,7 @@ This will show information for each argument:
 | - | - |
 | -h, --help |  show this help message and exit |
 | --score    |  Path to the input score file. |
-| --output   |  Path to save the output file. |
+| --output-prefix  | Prefix of the output files. |
 | --quantile |  Quantile threshold for outlier detection, between 0 and 1. Default: 0.99. |
 
 ## Input files
@@ -30,9 +30,10 @@ The output file has the same format as that of the `score` command.
 To extract outliers from the output of the previous score example, we can use the following command:
 
 ```
-sai outlier --score examples/results/1KG.nea_den.chr9.example.both.U50.scores.tsv \
-            --output examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv \
-            --quantile 0.99
+sai outlier --score examples/results/both/1KG.nea_den.chr9.example.both.stats.tsv \
+            --output-prefix examples/results/both/1KG.nea_den.chr9.example.both.stats \ 
+            --quantile 0.9
 ```
 
-This identifies candidate introgressed regions from both Neanderthals and Denisovans by selecting windows with U statistic values above the 0.99 quantile in the `score` command output. The result can be found [here](https://github.com/xin-huang/sai/blob/main/examples/results/1KG.nea_den.chr9.example.both.U50.outliers.tsv).
+This will produce separate outlier files for each statistic (e.g., $U$, $Q$, $D^+$), containing candidate introgressed regions that exceed the 0.9 quantile threshold.
+Examples can be found [here](https://github.com/xin-huang/sai/tree/main/examples/results/both).
