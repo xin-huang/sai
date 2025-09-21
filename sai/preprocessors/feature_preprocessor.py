@@ -126,7 +126,7 @@ class FeaturePreprocessor(DataPreprocessor):
         ):
             for stat_name in self.stat_config.root.keys():
                 if len(src_pop_list) > 1:
-                    items[stat_name] = [np.nan for i in range(len(src_pop_list))]
+                    items[stat_name] = [np.nan for _ in range(len(src_pop_list))]
                 else:
                     items[stat_name] = np.nan
                 if stat_name in ["U", "Q"]:

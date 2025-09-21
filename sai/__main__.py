@@ -57,7 +57,6 @@ def _sai_cli_parser() -> argparse.ArgumentParser:
 
     add_score_parser(subparsers)
     add_outlier_parser(subparsers)
-    add_plot_parser(subparsers)
 
     return top_parser
 

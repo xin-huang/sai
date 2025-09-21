@@ -64,9 +64,10 @@ class GlobalConfig(BaseModel):
         stat_data = self.statistics.root  # Dict[stat_name][group][pop] = ...
         population_paths = self.populations.root  # Dict[group] = path
 
-        categories_per_group = {}
-        for group, path in population_paths.items():
-            categories_per_group[group] = set(parse_ind_file(path).keys())
+        categories_per_group = {
+            group: set(parse_ind_file(path).keys())
+            for group, path in population_paths.items()
+        }
 
         for stat_name, params in stat_data.items():
             for group in ("ref", "tgt", "src"):
