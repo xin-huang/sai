@@ -19,10 +19,10 @@
 
 
 import argparse
+import sai.stats
 from sai import __version__
 from sai.parsers.score_parser import add_score_parser
 from sai.parsers.outlier_parser import add_outlier_parser
-from sai.parsers.plot_parser import add_plot_parser
 
 
 def _set_sigpipe_handler() -> None:
@@ -48,14 +48,15 @@ def _sai_cli_parser() -> argparse.ArgumentParser:
     top_parser : argparse.ArgumentParser
         A configured command-line interface parser.
     """
-    top_parser = argparse.ArgumentParser()
+    top_parser = argparse.ArgumentParser(
+        description="SAI: Statistics for Adaptive Introgression"
+    )
     top_parser.add_argument("--version", action="version", version=f"{__version__}")
     subparsers = top_parser.add_subparsers(dest="subcommand")
     subparsers.required = True
 
     add_score_parser(subparsers)
     add_outlier_parser(subparsers)
-    add_plot_parser(subparsers)
 
     return top_parser
 

@@ -16,3 +16,14 @@
 # along with this program. If not, please see
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
+
+
+from .generic_statistic import GenericStatistic
+from .danc_statistic import DancStatistic
+from .dd_statistic import DdStatistic
+from .df_statistic import DfStatistic
+from .dplus_statistic import DplusStatistic
+from .fd_statistic import FdStatistic
+from .q_statistic import QStatistic
+from .u_statistic import UStatistic
+from .stat_utils import *

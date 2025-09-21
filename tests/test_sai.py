@@ -18,31 +18,26 @@
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
-import os
 import pytest
 import pandas as pd
-import tempfile
-from sai.sai import score, outlier, plot
+import sai.stats
+from sai.sai import score, outlier
 
 
 @pytest.fixture
 def example_data(tmp_path):
     # Define example file paths
-    pytest.example_vcf = "./tests/data/example.vcf"
-    pytest.example_ref_ind_list = "./tests/data/example.ref.ind.list"
-    pytest.example_tgt_ind_list = "./tests/data/example.tgt.ind.list"
-    pytest.example_src_ind_list = "./tests/data/example.src.ind.list"
+    pytest.example_vcf = "tests/data/example.vcf"
+    pytest.example_config = "tests/data/test_sai.config.yaml"
 
     # Create a temporary output file path for the score function
     temp_output_file = tmp_path / "output.tsv"
 
     return {
         "vcf_file": pytest.example_vcf,
-        "ref_ind_file": pytest.example_ref_ind_list,
-        "tgt_ind_file": pytest.example_tgt_ind_list,
-        "src_ind_file": pytest.example_src_ind_list,
         "output_file": str(temp_output_file),
         "output_dir": tmp_path,
+        "config": pytest.example_config,
     }
 
 
@@ -51,127 +46,57 @@ def test_score(example_data):
     score(
         vcf_file=example_data["vcf_file"],
         chr_name="21",
-        ref_ind_file=example_data["ref_ind_file"],
-        tgt_ind_file=example_data["tgt_ind_file"],
-        src_ind_file=example_data["src_ind_file"],
         win_len=6666,
         win_step=6666,
-        num_src=1,
         anc_allele_file=None,
-        w=0.3,
-        y=[("=", 1)],
-        ploidy=[2, 2, 2],
         output_file=example_data["output_file"],
-        stat_type="Q95",
+        config=example_data["config"],
         num_workers=1,
     )
 
     # Read the generated output file and validate contents
     df = pd.read_csv(example_data["output_file"], sep="\t")
 
-    col_name = [col for col in df.columns if col.startswith("Q95(")][0]
+    col_name = [col for col in df.columns if col.startswith("Q")][0]
 
-    assert df[col_name].iloc[0] == 0.9, "Unexpected value in 'Q95' column"
+    assert df[col_name].iloc[0] == 0.9, "Unexpected value in 'Q' column"
 
 
 def test_score_mixed_ploidy(example_data):
     score(
-        vcf_file="./tests/data/test.mixed.ploidy.data.vcf",
+        vcf_file="tests/data/test.mixed.ploidy.data.vcf",
         chr_name="21",
-        ref_ind_file="./tests/data/test.ref.ind.list",
-        tgt_ind_file="./tests/data/test.tgt.ind.list",
-        src_ind_file="./tests/data/test.src.ind.list",
         win_len=50000,
         win_step=50000,
-        num_src=2,
         anc_allele_file=None,
-        w=0.3,
-        y=[("=", 1.0), ("=", 1.0)],
-        ploidy=[2, 4, 4],
         output_file=example_data["output_file"],
-        stat_type="U80",
+        config="tests/data/test_mixed_ploidy.config.yaml",
         num_workers=1,
     )
 
     df = pd.read_csv(example_data["output_file"], sep="\t")
 
-    col_name = [col for col in df.columns if col.startswith("U80(")][0]
-
-    assert col_name == "U80(w<0.3,y=(=1.0,=1.0))"
-    assert df[col_name].iloc[0] == 0, "Unexpected value in 'U80' column"
-    assert df[col_name].iloc[1] == 1, "Unexpected value in 'U80' column"
+    assert df["U"].iloc[0] == 0, "Unexpected value in 'U' column"
+    assert df["U"].iloc[1] == 1, "Unexpected value in 'U' column"
 
 
 def test_outlier(example_data):
-    score(
-        vcf_file=example_data["vcf_file"],
-        chr_name="21",
-        ref_ind_file=example_data["ref_ind_file"],
-        tgt_ind_file=example_data["tgt_ind_file"],
-        src_ind_file=example_data["src_ind_file"],
-        win_len=6666,
-        win_step=6666,
-        num_src=1,
-        anc_allele_file=None,
-        w=0.3,
-        y=[("=", 1)],
-        ploidy=[2, 2, 2],
-        output_file=example_data["output_file"],
-        stat_type="Q95",
-        num_workers=1,
-    )
-
-    outliers_file = example_data["output_dir"] / "outliers.tsv"
-
-    # Run the outlier function
-    with pytest.warns(UserWarning, match="only one unique value"):
-        outlier(
-            score_file=str(example_data["output_file"]),
-            output=str(outliers_file),
-            quantile=0.95,
-        )
-
-    assert outliers_file.exists()
-
-    q_outliers_file = example_data["output_dir"] / "q_outliers.tsv"
-
+    output_prefix = f"{example_data['output_dir']}/outliers"
     outlier(
         score_file="tests/data/test.q.scores",
-        output=str(q_outliers_file),
+        output_prefix=output_prefix,
         quantile=0.25,
     )
 
-    df = pd.read_csv(str(q_outliers_file), sep="\t")
-    assert df["Q95"].iloc[0] == 0.7
+    df = pd.read_csv(f"{output_prefix}.Q.0.25.outliers.tsv", sep="\t")
+    assert df["Q"].iloc[0] == 0.7
 
     outlier(
         score_file="tests/data/test.q.scores",
-        output=str(q_outliers_file),
+        output_prefix=output_prefix,
         quantile=0.75,
     )
 
-    df = pd.read_csv(str(q_outliers_file), sep="\t")
-    assert df["Q95"].iloc[0] == 1.0
-    assert df["Q95"].iloc[1] == 1.0
-
-
-def test_plot():
-    """Test if the plot function correctly generates an output file."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_output:
-        output_file = tmp_output.name
-
-    # Call the plot function
-    plot(
-        u_file="tests/data/test.u.outliers.tsv",
-        q_file="tests/data/test.q.outliers.tsv",
-        output=output_file,
-        xlabel="Q Values",
-        ylabel="U Values",
-        title="Test Plot",
-    )
-
-    # Check if the output file is created
-    assert os.path.exists(output_file), "Plot output file was not created."
-
-    # Clean up temporary files
-    os.remove(output_file)
+    df = pd.read_csv(f"{output_prefix}.Q.0.75.outliers.tsv", sep="\t")
+    assert df["Q"].iloc[0] == 1.0
+    assert df["Q"].iloc[1] == 1.0

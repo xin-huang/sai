@@ -17,4 +17,29 @@
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
-__version__ = "1.1.0"
+
+import numpy as np
+from sai.stats import DdStatistic
+
+
+def test_DdStatistic_compute():
+    ref_gts = np.array([[1, 1], [0, 0]])
+    tgt_gts = np.array([[1, 0], [0, 1]])
+    src_gts = np.array([[0, 1], [1, 1]])
+
+    dd_stat = DdStatistic(
+        ref_gts=ref_gts,
+        tgt_gts=tgt_gts,
+        src_gts_list=[src_gts],
+        ref_ploidy=1,
+        tgt_ploidy=1,
+        src_ploidy_list=[1],
+    )
+    results = dd_stat.compute()
+
+    expected_result = 0.5
+
+    assert results["name"] == "DD"
+    assert np.isclose(
+        results["value"][0], expected_result
+    ), f"Expected {expected_result}, but got {results['value'][0]}"

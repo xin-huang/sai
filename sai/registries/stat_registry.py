@@ -17,4 +17,14 @@
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
-__version__ = "1.1.0"
+
+from sai.registries.generic_registry import GenericRegistry
+
+
+class StatRegistry(GenericRegistry):
+    """
+    Concrete registry for statistic classes.
+    """
+
+
+STAT_REGISTRY = StatRegistry()

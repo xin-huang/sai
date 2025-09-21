@@ -17,4 +17,8 @@
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
-__version__ = "1.1.0"
+
+from .global_config import GlobalConfig
+from .ploidy_config import PloidyConfig
+from .pop_config import PopConfig
+from .stat_config import StatConfig
