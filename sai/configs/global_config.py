@@ -55,6 +55,8 @@ class GlobalConfig(BaseModel):
         ploidy_data = self.ploidies.root  # Dict[str, Dict[str, int]]
 
         for stat_name, params in stat_data.items():
+            if stat_name not in ["U", "Q"]:
+                continue
             for group in ("ref", "tgt", "src"):
                 pop_dict = params.get(group, {})
                 for pop in pop_dict:
@@ -82,6 +84,8 @@ class GlobalConfig(BaseModel):
         }
 
         for stat_name, params in stat_data.items():
+            if stat_name not in ["U", "Q"]:
+                continue
             for group in ("ref", "tgt", "src"):
                 pop_dict = params.get(group, {})
                 expected_categories = categories_per_group.get(group, set())

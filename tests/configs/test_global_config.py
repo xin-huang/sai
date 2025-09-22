@@ -37,6 +37,11 @@ def test_global_config_valid(tmp_path):
 
     stat_cfg = StatConfig.model_validate(
         {
+            "Danc": False,
+            "Dplus": True,
+            "df": True,
+            "fd": False,
+            "DD": True,
             "Q": {
                 "ref": {"popA": 0.3},
                 "tgt": {"popB": 0.95},

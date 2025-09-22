@@ -134,6 +134,8 @@ class FeaturePreprocessor(DataPreprocessor):
                     items["cdd_pos"][stat_name] = np.array([])
         else:
             for stat_name in self.stat_config.root.keys():
+                if stat_name not in ["U", "Q"] and self.stat_config.root[stat_name] is not True:
+                    continue
                 stat_cls = STAT_REGISTRY.get(stat_name)
                 stat = stat_cls(
                     ref_gts=ref_gts,
