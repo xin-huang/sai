@@ -31,6 +31,18 @@ class GlobalConfig(BaseModel):
     ploidies: PloidyConfig
     populations: PopConfig
 
+    @model_validator(mode="before")
+    @classmethod
+    def _check_required(cls, data):
+        # data is the raw input (usually a dict)
+        req = {"statistics", "ploidies", "populations"}
+        if isinstance(data, dict):
+            if missing := sorted(req - set(data.keys())):
+                raise ValueError(
+                    f"Missing required fields in configuration: {', '.join(missing)}"
+                )
+        return data
+
     @model_validator(mode="after")
     def validate_population_in_ploidies(self) -> "GlobalConfig":
         """
@@ -43,6 +55,8 @@ class GlobalConfig(BaseModel):
         ploidy_data = self.ploidies.root  # Dict[str, Dict[str, int]]
 
         for stat_name, params in stat_data.items():
+            if stat_name not in ["U", "Q"]:
+                continue
             for group in ("ref", "tgt", "src"):
                 pop_dict = params.get(group, {})
                 for pop in pop_dict:
@@ -70,6 +84,8 @@ class GlobalConfig(BaseModel):
         }
 
         for stat_name, params in stat_data.items():
+            if stat_name not in ["U", "Q"]:
+                continue
             for group in ("ref", "tgt", "src"):
                 pop_dict = params.get(group, {})
                 expected_categories = categories_per_group.get(group, set())

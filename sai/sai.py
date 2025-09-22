@@ -69,19 +69,18 @@ def score(
     except yaml.YAMLError as e:
         raise ValueError(f"Error parsing YAML configuration file '{config}': {e}")
 
-    required_fields = ["statistics", "ploidies", "populations"]
-    missing_fields = [field for field in required_fields if field not in config_dict]
-
-    if missing_fields:
-        raise ValueError(
-            f"Missing required fields in configuration file '{config}': {', '.join(missing_fields)}"
-        )
-
     global_config = GlobalConfig(**config_dict)
 
     stat_config = global_config.statistics
     ploidy_config = global_config.ploidies
     pop_config = global_config.populations
+
+    if anc_allele_file is None:
+        for stat_name in stat_config.root.keys():
+            if stat_name in ["fd", "df", "Danc", "Dplus"]:
+                raise ValueError(
+                    f"The {stat_name} statistic requires polarized data, please provide the ancestral allele information with `--anc-alleles`."
+                )
 
     generator = ChunkGenerator(
         vcf_file=vcf_file,
@@ -108,9 +107,20 @@ def score(
 
     src_pops = list(ploidy_config.root["src"].keys())
 
-    header_parts = ["Chrom", "Start", "End", "Ref", "Tgt", "Src", "N(Variants)"]
+    header_parts = [
+        "Chrom",
+        "Start",
+        "End",
+        "Ref",
+        "Tgt",
+        "Src",
+        "Outgroup",
+        "N(Variants)",
+    ]
 
     for stat_name in stat_config.root.keys():
+        if stat_name not in ("U", "Q") and stat_config.root[stat_name] is False:
+            continue
         if stat_name in ("U", "Q") or len(src_pops) <= 1:
             header_parts.append(stat_name)
         else:

@@ -37,7 +37,10 @@ class StatConfig(
     RootModel[
         Dict[
             str,
-            Dict[str, Dict[str, Union[float, str]]],
+            Union[
+                bool,  # Danc, Dplus, df, fd, DD
+                Dict[str, Dict[str, Union[float, str]]],  # U, Q
+            ],
         ]
     ]
 ):
@@ -53,17 +56,20 @@ class StatConfig(
 
     @field_validator("root")
     def check_valid_stat_types(
-        cls, v: Dict[str, Dict[str, Dict[str, Union[float, str]]]]
+        cls, v: Dict[str, Union[bool, Dict[str, Dict[str, Union[float, str]]]]]
     ) -> Dict[
         str,
-        Dict[str, Dict[str, Union[float, tuple[str, float]]]],
+        Union[
+            bool,
+            Dict[str, Dict[str, Union[float, tuple[str, float]]]],
+        ],
     ]:
         """
         Validates statistics parameters, specifically for U and Q types.
 
         Parameters
         ----------
-        v : Dict[str, Dict[str, Dict[str, Union[float, str]]]]
+        v : Dict[str, Union[bool, Dict[str, Dict[str, Union[float, str]]]]]
             A dictionary mapping statistic names (e.g., "U", "Q") to parameter groups ("ref", "tgt", "src"),
             where each group is a mapping of population names to values.
 
@@ -76,7 +82,7 @@ class StatConfig(
 
         Returns
         -------
-        Dict[str, Dict[str, Dict[str, Union[float, tuple[str, float]]]]]
+        Dict[str, Union[bool, Dict[str, Dict[str, Union[float, tuple[str, float]]]]]]
             A validated and normalized statistics dictionary.
 
             - Outer dict key: statistic name (e.g., "U", "Q")
@@ -202,7 +208,7 @@ class StatConfig(
 
     def get_parameters(
         self, stat_name: str
-    ) -> Optional[Dict[str, Dict[str, Union[float, tuple[str, float]]]]]:
+    ) -> Optional[Union[bool, Dict[str, Union[float, tuple[str, float]]]]]:
         """
         Retrieves the parameters for a specific statistic.
 
@@ -213,7 +219,7 @@ class StatConfig(
 
         Returns
         -------
-        Optional[Dict[str, Dict[str, Union[float, tuple[str, float]]]]]
+        Optional[Union[bool, Dict[str, Union[float, tuple[str, float]]]]]
             A dictionary containing the parameters for the specified statistic,
             or None if not found.
         """

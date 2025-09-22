@@ -1,0 +1,13 @@
+statistics:
+  Q:
+    ref: 
+      AFR: 0.3
+    tgt: 
+      CHB: 0.95
+    src:
+      Nean: "=1"
+
+populations:
+  ref: "tests/data/example.ref.ind.list"
+  tgt: "tests/data/example.tgt.ind.list"
+  src: "tests/data/example.src.ind.list"

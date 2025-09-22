@@ -1,4 +1,6 @@
 statistics:
+  df: True
+  fd: False
   U:
     ref: 
       ref1: 0.3

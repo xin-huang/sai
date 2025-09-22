@@ -20,7 +20,7 @@
 
 import numpy as np
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from sai.preprocessors import DataPreprocessor
 from sai.registries.stat_registry import STAT_REGISTRY
 from sai.configs import PloidyConfig, StatConfig
@@ -66,12 +66,14 @@ class FeaturePreprocessor(DataPreprocessor):
         ref_pop: str,
         tgt_pop: str,
         src_pop_list: list[str],
+        out_pop: Optional[str],
         start: int,
         end: int,
         pos: np.ndarray,
         ref_gts: np.ndarray,
         tgt_gts: np.ndarray,
         src_gts_list: list[np.ndarray],
+        out_gts: Optional[np.ndarray],
         ploidy_config: PloidyConfig,
     ) -> list[dict[str, Any]]:
         """
@@ -87,6 +89,8 @@ class FeaturePreprocessor(DataPreprocessor):
             Target population name.
         src_pop_list : list[str]
             List of source population names.
+        out_pop: Optional[str],
+            Outgroup population name.
         start : int
             Start position of the genomic window.
         end : int
@@ -99,6 +103,8 @@ class FeaturePreprocessor(DataPreprocessor):
             Genotype data for the target population.
         src_gts_list : list[np.ndarray]
             List of genotype arrays for each source population.
+        out_gts: Optional[np.ndarray]
+            Genotype data for the outgroup.
         ploidy_config: PloidyConfig
             Configuration specifying ploidy levels for each population involved in the analysis.
 
@@ -107,6 +113,9 @@ class FeaturePreprocessor(DataPreprocessor):
         list[dict[str, Any]]
             A list containing a dictionary of calculated feature vectors for the genomic window.
         """
+        if out_pop is None:
+            out_pop = "NA"
+
         items = {
             "chr_name": chr_name,
             "start": start,
@@ -114,6 +123,7 @@ class FeaturePreprocessor(DataPreprocessor):
             "ref_pop": ref_pop,
             "tgt_pop": tgt_pop,
             "src_pop_list": src_pop_list,
+            "out_pop": out_pop,
             "nsnps": len(pos),
             "cdd_pos": {},
         }
@@ -134,14 +144,21 @@ class FeaturePreprocessor(DataPreprocessor):
                     items["cdd_pos"][stat_name] = np.array([])
         else:
             for stat_name in self.stat_config.root.keys():
+                if (
+                    stat_name not in ["U", "Q"]
+                    and self.stat_config.root[stat_name] is not True
+                ):
+                    continue
                 stat_cls = STAT_REGISTRY.get(stat_name)
                 stat = stat_cls(
                     ref_gts=ref_gts,
                     tgt_gts=tgt_gts,
                     src_gts_list=src_gts_list,
+                    out_gts=out_gts,
                     ref_ploidy=ploidy_config.get_ploidy("ref", ref_pop),
                     tgt_ploidy=ploidy_config.get_ploidy("tgt", tgt_pop),
                     src_ploidy_list=ploidy_config.get_ploidy("src"),
+                    out_ploidy=ploidy_config.get_ploidy("outgroup", out_pop),
                 )
                 if stat_name == "U":
                     results = stat.compute(
@@ -192,6 +209,11 @@ class FeaturePreprocessor(DataPreprocessor):
 
                 stats_parts = []
                 for stat_name in self.stat_config.root.keys():
+                    if (
+                        stat_name not in ["U", "Q"]
+                        and self.stat_config.root[stat_name] is not True
+                    ):
+                        continue
                     val = item.get(stat_name)
 
                     if isinstance(val, list) and len(val) == len(src_pop):
@@ -209,7 +231,7 @@ class FeaturePreprocessor(DataPreprocessor):
 
                 line = (
                     f"{item['chr_name']}\t{item['start']}\t{item['end']}\t"
-                    f"{item['ref_pop']}\t{item['tgt_pop']}\t{src_pop_str}\t"
+                    f"{item['ref_pop']}\t{item['tgt_pop']}\t{src_pop_str}\t{item['out_pop']}\t"
                     f"{item['nsnps']}\t{stats}\n"
                 )
                 lines.append(line)
