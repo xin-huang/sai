@@ -37,8 +37,7 @@ class GlobalConfig(BaseModel):
         # data is the raw input (usually a dict)
         req = {"statistics", "ploidies", "populations"}
         if isinstance(data, dict):
-            missing = sorted(req - set(data.keys()))
-            if missing:
+            if missing := sorted(req - set(data.keys())):
                 raise ValueError(
                     f"Missing required fields in configuration: {', '.join(missing)}"
                 )
