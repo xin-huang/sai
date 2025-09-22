@@ -46,7 +46,7 @@ def test_global_config_valid(tmp_path):
                 "ref": {"popA": 0.3},
                 "tgt": {"popB": 0.95},
                 "src": {"popC": "=1"},
-            }
+            },
         }
     )
 

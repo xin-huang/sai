@@ -36,11 +36,11 @@ from typing import Dict, Literal, List, Optional, Union
 class StatConfig(
     RootModel[
         Dict[
-            str, 
+            str,
             Union[
-                bool, # Danc, Dplus, df, fd, DD
-                Dict[str, Dict[str, Union[float, str]]], # U, Q
-            ]
+                bool,  # Danc, Dplus, df, fd, DD
+                Dict[str, Dict[str, Union[float, str]]],  # U, Q
+            ],
         ]
     ]
 ):
@@ -62,7 +62,7 @@ class StatConfig(
         Union[
             bool,
             Dict[str, Dict[str, Union[float, tuple[str, float]]]],
-        ]
+        ],
     ]:
         """
         Validates statistics parameters, specifically for U and Q types.

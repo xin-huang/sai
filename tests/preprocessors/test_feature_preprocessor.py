@@ -31,6 +31,7 @@ def feature_preprocessor():
     # Create an instance of FeaturePreprocessor with thresholds and temporary output file
     stat_config = StatConfig(
         {
+            "DD": False,
             "U": {
                 "ref": {"ref1": 0.3},
                 "tgt": {"tgt1": 0.5},
@@ -98,6 +99,7 @@ def test_run(feature_preprocessor):
     assert result[0]["ref_pop"] == ref_pop
     assert result[0]["tgt_pop"] == tgt_pop
     assert result[0]["src_pop_list"] == src_pop_list
+    assert "DD" not in result[0]
     assert "U" in result[0]
     assert "Q" in result[0]
 
