@@ -69,14 +69,6 @@ def score(
     except yaml.YAMLError as e:
         raise ValueError(f"Error parsing YAML configuration file '{config}': {e}")
 
-    required_fields = ["statistics", "ploidies", "populations"]
-    missing_fields = [field for field in required_fields if field not in config_dict]
-
-    if missing_fields:
-        raise ValueError(
-            f"Missing required fields in configuration file '{config}': {', '.join(missing_fields)}"
-        )
-
     global_config = GlobalConfig(**config_dict)
 
     stat_config = global_config.statistics
