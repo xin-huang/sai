@@ -159,13 +159,16 @@ class WindowGenerator(DataGenerator):
             ploidy and phase information, reference, target, and source genotypes,
             and positions for each window.
         """
-        for ref_pop, tgt_pop, src_comb in product(
-            self.ref_samples, self.tgt_samples, self.src_combinations
+        out_samples = self.out_samples or [None]
+
+        for ref_pop, tgt_pop, src_comb, out_pop in product(
+            self.ref_samples, self.tgt_samples, self.src_combinations, out_samples
         ):
             for start, end in self.tgt_windows[tgt_pop]:
                 ref_data = self.ref_data[ref_pop]
                 tgt_data = self.tgt_data[tgt_pop]
                 src_data_list = [self.src_data[src_pop] for src_pop in src_comb]
+                out_data = None if out_pop is None else self.out_data[out_pop]
 
                 ref_mask = (ref_data.POS >= start) & (ref_data.POS <= end)
                 tgt_mask = (tgt_data.POS >= start) & (tgt_data.POS <= end)
@@ -173,6 +176,11 @@ class WindowGenerator(DataGenerator):
                     (src_data.POS >= start) & (src_data.POS <= end)
                     for src_data in src_data_list
                 ]
+                out_mask = (
+                    None
+                    if out_data is None
+                    else ((out_data.POS >= start) & (out_data.POS <= end))
+                )
 
                 ref_pos = ref_data.POS[ref_mask]
                 tgt_pos = tgt_data.POS[tgt_mask]
@@ -180,10 +188,31 @@ class WindowGenerator(DataGenerator):
                     src_data.POS[mask]
                     for src_data, mask in zip(src_data_list, src_masks)
                 ]
+                out_pos = None if out_data is None else out_data.POS[out_mask]
 
                 common_pos = np.intersect1d(ref_pos, tgt_pos)
                 for src_pos in src_pos_list:
                     common_pos = np.intersect1d(common_pos, src_pos)
+                if out_pos is not None:
+                    common_pos = np.intersect1d(common_pos, out_pos)
+
+                if common_pos.size == 0:
+                    yield {
+                        "chr_name": self.chr_name,
+                        "ref_pop": ref_pop,
+                        "tgt_pop": tgt_pop,
+                        "src_pop_list": src_comb,
+                        "out_pop": out_pop,
+                        "start": start,
+                        "end": end,
+                        "pos": [],
+                        "ref_gts": None,
+                        "tgt_gts": None,
+                        "src_gts_list": None,
+                        "out_gts": None,
+                        "ploidy_config": self.ploidy_config,
+                    }
+                    continue
 
                 ref_gts = ref_data.GT.compress(
                     np.isin(ref_data.POS, common_pos), axis=0
@@ -195,37 +224,27 @@ class WindowGenerator(DataGenerator):
                     src_data.GT.compress(np.isin(src_data.POS, common_pos), axis=0)
                     for src_data in src_data_list
                 ]
+                out_gts = (
+                    None
+                    if out_data is None
+                    else out_data.GT.compress(np.isin(out_data.POS, common_pos), axis=0)
+                )
 
-                sub_pos = common_pos
-
-                if len(sub_pos) == 0:
-                    yield {
-                        "chr_name": self.chr_name,
-                        "ref_pop": ref_pop,
-                        "tgt_pop": tgt_pop,
-                        "src_pop_list": src_comb,
-                        "start": start,
-                        "end": end,
-                        "pos": [],
-                        "ref_gts": None,
-                        "tgt_gts": None,
-                        "src_gts_list": None,
-                        "ploidy_config": self.ploidy_config,
-                    }
-                else:
-                    yield {
-                        "chr_name": self.chr_name,
-                        "ref_pop": ref_pop,
-                        "tgt_pop": tgt_pop,
-                        "src_pop_list": src_comb,  # List of source populations in this combination
-                        "start": start,
-                        "end": end,
-                        "pos": sub_pos,
-                        "ref_gts": ref_gts,
-                        "tgt_gts": tgt_gts,
-                        "src_gts_list": src_gts_list,  # List of genotypes for each source population in src_comb
-                        "ploidy_config": self.ploidy_config,
-                    }
+                yield {
+                    "chr_name": self.chr_name,
+                    "ref_pop": ref_pop,
+                    "tgt_pop": tgt_pop,
+                    "src_pop_list": src_comb,
+                    "out_pop": out_pop,
+                    "start": start,
+                    "end": end,
+                    "pos": common_pos,
+                    "ref_gts": ref_gts,
+                    "tgt_gts": tgt_gts,
+                    "src_gts_list": src_gts_list,
+                    "out_gts": out_gts,
+                    "ploidy_config": self.ploidy_config,
+                }
 
     def _none_window_generator(self) -> Iterator[dict[str, Any]]:
         """
@@ -247,8 +266,10 @@ class WindowGenerator(DataGenerator):
             - "src_gts_list" (None): Placeholder for missing source genotypes.
             - "ploidy" (None): Placeholder for missing ploidy information.
         """
-        for ref_pop, tgt_pop, src_comb in product(
-            self.ref_samples, self.tgt_samples, self.src_combinations
+        out_samples = self.out_samples or [None]
+
+        for ref_pop, tgt_pop, src_comb, out_pop in product(
+            self.ref_samples, self.tgt_samples, self.src_combinations, out_samples
         ):
             for start, end in self.tgt_windows[tgt_pop]:
                 yield {
@@ -256,12 +277,14 @@ class WindowGenerator(DataGenerator):
                     "ref_pop": ref_pop,
                     "tgt_pop": tgt_pop,
                     "src_pop_list": src_comb,
+                    "out_pop": out_pop,
                     "start": start,
                     "end": end,
                     "pos": [],
                     "ref_gts": None,
                     "tgt_gts": None,
                     "src_gts_list": None,
+                    "out_gts": None,
                     "ploidy_config": self.ploidy_config,
                 }
 

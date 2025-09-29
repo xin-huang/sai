@@ -20,7 +20,7 @@
 
 import numpy as np
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from sai.preprocessors import DataPreprocessor
 from sai.registries.stat_registry import STAT_REGISTRY
 from sai.configs import PloidyConfig, StatConfig
@@ -66,12 +66,14 @@ class FeaturePreprocessor(DataPreprocessor):
         ref_pop: str,
         tgt_pop: str,
         src_pop_list: list[str],
+        out_pop: Optional[str],
         start: int,
         end: int,
         pos: np.ndarray,
         ref_gts: np.ndarray,
         tgt_gts: np.ndarray,
         src_gts_list: list[np.ndarray],
+        out_gts: Optional[np.ndarray],
         ploidy_config: PloidyConfig,
     ) -> list[dict[str, Any]]:
         """
@@ -134,14 +136,21 @@ class FeaturePreprocessor(DataPreprocessor):
                     items["cdd_pos"][stat_name] = np.array([])
         else:
             for stat_name in self.stat_config.root.keys():
+                if (
+                    stat_name not in ["U", "Q"]
+                    and self.stat_config.root[stat_name] is not True
+                ):
+                    continue
                 stat_cls = STAT_REGISTRY.get(stat_name)
                 stat = stat_cls(
                     ref_gts=ref_gts,
                     tgt_gts=tgt_gts,
                     src_gts_list=src_gts_list,
+                    out_gts=out_gts,
                     ref_ploidy=ploidy_config.get_ploidy("ref", ref_pop),
                     tgt_ploidy=ploidy_config.get_ploidy("tgt", tgt_pop),
                     src_ploidy_list=ploidy_config.get_ploidy("src"),
+                    out_ploidy=ploidy_config.get_ploidy("outgroup", out_pop),
                 )
                 if stat_name == "U":
                     results = stat.compute(
@@ -192,6 +201,11 @@ class FeaturePreprocessor(DataPreprocessor):
 
                 stats_parts = []
                 for stat_name in self.stat_config.root.keys():
+                    if (
+                        stat_name not in ["U", "Q"]
+                        and self.stat_config.root[stat_name] is not True
+                    ):
+                        continue
                     val = item.get(stat_name)
 
                     if isinstance(val, list) and len(val) == len(src_pop):

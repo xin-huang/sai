@@ -19,6 +19,7 @@
 
 
 import pytest
+import yaml
 from sai.configs.global_config import GlobalConfig
 from sai.configs.stat_config import StatConfig
 from sai.configs.ploidy_config import PloidyConfig
@@ -36,11 +37,16 @@ def test_global_config_valid(tmp_path):
 
     stat_cfg = StatConfig.model_validate(
         {
+            "Danc": False,
+            "Dplus": True,
+            "df": True,
+            "fd": False,
+            "DD": True,
             "Q": {
                 "ref": {"popA": 0.3},
                 "tgt": {"popB": 0.95},
                 "src": {"popC": "=1"},
-            }
+            },
         }
     )
 
@@ -69,6 +75,17 @@ def test_global_config_valid(tmp_path):
     assert global_cfg.statistics.get_parameters("Q")["ref"]["popA"] == 0.3
     assert global_cfg.ploidies.get_ploidy("ref", "popA") == 2
     assert global_cfg.populations.get_population("ref") == str(ref_file)
+
+
+def test_global_config_missing_fields():
+    for field in ["statistics", "ploidies", "populations"]:
+        with pytest.raises(
+            ValueError, match=f"Missing required fields in configuration: {field}"
+        ):
+            config = f"tests/data/test_global_config.missing.{field}.yaml"
+            with open(config, "r") as f:
+                config_dict = yaml.safe_load(f)
+            GlobalConfig(**config_dict)
 
 
 def test_global_config_invalid_ploidy(tmp_path):
