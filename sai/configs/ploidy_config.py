@@ -81,6 +81,8 @@ class PloidyConfig(RootModel[Dict[str, Dict[str, int]]]):
             - If population is None: returns a list of ploidies for all populations in the group.
         """
         if group not in self.root:
+            if group == "outgroup":
+                return None
             raise KeyError(f"Group '{group}' not found in configuration.")
 
         if population is None:

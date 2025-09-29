@@ -266,8 +266,10 @@ class WindowGenerator(DataGenerator):
             - "src_gts_list" (None): Placeholder for missing source genotypes.
             - "ploidy" (None): Placeholder for missing ploidy information.
         """
-        for ref_pop, tgt_pop, src_comb in product(
-            self.ref_samples, self.tgt_samples, self.src_combinations
+        out_samples = self.out_samples or [None]
+
+        for ref_pop, tgt_pop, src_comb, out_pop in product(
+            self.ref_samples, self.tgt_samples, self.src_combinations, out_samples
         ):
             for start, end in self.tgt_windows[tgt_pop]:
                 yield {
@@ -275,12 +277,14 @@ class WindowGenerator(DataGenerator):
                     "ref_pop": ref_pop,
                     "tgt_pop": tgt_pop,
                     "src_pop_list": src_comb,
+                    "out_pop": out_pop,
                     "start": start,
                     "end": end,
                     "pos": [],
                     "ref_gts": None,
                     "tgt_gts": None,
                     "src_gts_list": None,
+                    "out_gts": None,
                     "ploidy_config": self.ploidy_config,
                 }
 

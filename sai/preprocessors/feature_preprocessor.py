@@ -146,9 +146,11 @@ class FeaturePreprocessor(DataPreprocessor):
                     ref_gts=ref_gts,
                     tgt_gts=tgt_gts,
                     src_gts_list=src_gts_list,
+                    out_gts=out_gts,
                     ref_ploidy=ploidy_config.get_ploidy("ref", ref_pop),
                     tgt_ploidy=ploidy_config.get_ploidy("tgt", tgt_pop),
                     src_ploidy_list=ploidy_config.get_ploidy("src"),
+                    out_ploidy=ploidy_config.get_ploidy("outgroup", out_pop),
                 )
                 if stat_name == "U":
                     results = stat.compute(
