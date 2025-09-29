@@ -83,12 +83,14 @@ def test_run(feature_preprocessor):
         ref_pop=ref_pop,
         tgt_pop=tgt_pop,
         src_pop_list=src_pop_list,
+        out_pop=None,
         start=start,
         end=end,
         pos=pos,
         ref_gts=ref_gts,
         tgt_gts=tgt_gts,
         src_gts_list=src_gts_list,
+        out_gts=None,
         ploidy_config=ploidy_config,
     )
 
@@ -108,12 +110,14 @@ def test_run(feature_preprocessor):
         ref_pop=ref_pop,
         tgt_pop=tgt_pop,
         src_pop_list=src_pop_list,
+        out_pop=None,
         start=start,
         end=end,
         pos=pos,
         ref_gts=None,
         tgt_gts=None,
         src_gts_list=None,
+        out_gts=None,
         ploidy_config=None,
     )
 
@@ -204,12 +208,14 @@ def test_run_from_file(example_data, tmp_path):
             ref_pop=window_data["ref_pop"],
             tgt_pop=window_data["tgt_pop"],
             src_pop_list=window_data["src_pop_list"],
+            out_pop=None,
             start=window_data["start"],
             end=window_data["end"],
             pos=window_data["pos"],
             ref_gts=window_data["ref_gts"],
             tgt_gts=window_data["tgt_gts"],
             src_gts_list=window_data["src_gts_list"],
+            out_gts=None,
             ploidy_config=window_data["ploidy_config"],
         )
         preprocessor.process_items(items)

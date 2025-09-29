@@ -20,7 +20,7 @@
 
 import numpy as np
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from sai.preprocessors import DataPreprocessor
 from sai.registries.stat_registry import STAT_REGISTRY
 from sai.configs import PloidyConfig, StatConfig
@@ -66,12 +66,14 @@ class FeaturePreprocessor(DataPreprocessor):
         ref_pop: str,
         tgt_pop: str,
         src_pop_list: list[str],
+        out_pop: Optional[str],
         start: int,
         end: int,
         pos: np.ndarray,
         ref_gts: np.ndarray,
         tgt_gts: np.ndarray,
         src_gts_list: list[np.ndarray],
+        out_gts: Optional[np.ndarray],
         ploidy_config: PloidyConfig,
     ) -> list[dict[str, Any]]:
         """
