@@ -31,6 +31,7 @@ def feature_preprocessor():
     # Create an instance of FeaturePreprocessor with thresholds and temporary output file
     stat_config = StatConfig(
         {
+            "DD": False,
             "U": {
                 "ref": {"ref1": 0.3},
                 "tgt": {"tgt1": 0.5},
@@ -82,12 +83,14 @@ def test_run(feature_preprocessor):
         ref_pop=ref_pop,
         tgt_pop=tgt_pop,
         src_pop_list=src_pop_list,
+        out_pop=None,
         start=start,
         end=end,
         pos=pos,
         ref_gts=ref_gts,
         tgt_gts=tgt_gts,
         src_gts_list=src_gts_list,
+        out_gts=None,
         ploidy_config=ploidy_config,
     )
 
@@ -98,6 +101,7 @@ def test_run(feature_preprocessor):
     assert result[0]["ref_pop"] == ref_pop
     assert result[0]["tgt_pop"] == tgt_pop
     assert result[0]["src_pop_list"] == src_pop_list
+    assert "DD" not in result[0]
     assert "U" in result[0]
     assert "Q" in result[0]
 
@@ -106,12 +110,14 @@ def test_run(feature_preprocessor):
         ref_pop=ref_pop,
         tgt_pop=tgt_pop,
         src_pop_list=src_pop_list,
+        out_pop=None,
         start=start,
         end=end,
         pos=pos,
         ref_gts=None,
         tgt_gts=None,
         src_gts_list=None,
+        out_gts=None,
         ploidy_config=None,
     )
 
@@ -131,6 +137,7 @@ def test_process_items(feature_preprocessor, tmp_path):
         "end": 2000,
         "ref_pop": "ref1",
         "tgt_pop": "tgt1",
+        "out_pop": "NA",
         "src_pop_list": ["src1", "src2"],
         "nsnps": 10,
         "U": 5,
@@ -148,7 +155,7 @@ def test_process_items(feature_preprocessor, tmp_path):
     with open(temp_output, "r") as f:
         lines = f.readlines()
         assert len(lines) == 1  # Ensure only one line is written
-        expected_output = "21\t1000\t2000\tref1\ttgt1\tsrc1,src2\t10\t5\t0.8\n"
+        expected_output = "21\t1000\t2000\tref1\ttgt1\tsrc1,src2\tNA\t10\t5\t0.8\n"
         assert lines[0] == expected_output
 
 
@@ -202,12 +209,14 @@ def test_run_from_file(example_data, tmp_path):
             ref_pop=window_data["ref_pop"],
             tgt_pop=window_data["tgt_pop"],
             src_pop_list=window_data["src_pop_list"],
+            out_pop=None,
             start=window_data["start"],
             end=window_data["end"],
             pos=window_data["pos"],
             ref_gts=window_data["ref_gts"],
             tgt_gts=window_data["tgt_gts"],
             src_gts_list=window_data["src_gts_list"],
+            out_gts=None,
             ploidy_config=window_data["ploidy_config"],
         )
         preprocessor.process_items(items)

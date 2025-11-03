@@ -86,7 +86,4 @@ class FdStatistic(GenericStatistic):
             fd = numerator / denominator if denominator != 0 else np.nan
             fd_results.append(fd)
 
-            # for i in range(len(ref_freq)):
-            #    print(f"{ref_freq[i]}\t{tgt_freq[i]}\t{src_freq[i]}\t{out_freq[i]}")
-
         return {"name": self.STAT_NAME, "value": fd_results}

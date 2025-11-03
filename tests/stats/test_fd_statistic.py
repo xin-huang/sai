@@ -26,7 +26,7 @@ def test_FdStatistic_compute():
     ref_gts = np.array([[0, 1], [1, 0], [0, 1]])  # Reference population
     tgt_gts = np.array([[1, 0], [0, 1], [1, 0]])  # Target population
     src_gts = np.array([[1, 1], [1, 1], [1, 1]])  # Source population
-    # out_gts = None  # No outgroup provided
+    out_gts = None  # No outgroup provided
 
     # ref_freq = [0.5, 0.5, 0.5]
     # tgt_freq = [0.5, 0.5, 0.5]
@@ -53,9 +53,11 @@ def test_FdStatistic_compute():
         ref_gts=ref_gts,
         tgt_gts=tgt_gts,
         src_gts_list=[src_gts],
+        out_gts=out_gts,
         ref_ploidy=1,
         tgt_ploidy=1,
         src_ploidy_list=[1],
+        out_ploidy=None,
     )
 
     results = fd_stat.compute()

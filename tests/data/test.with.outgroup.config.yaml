@@ -1,0 +1,21 @@
+statistics:
+  fd: True
+  df: True
+  Danc: True
+  Dplus: True
+
+ploidies:
+  ref:
+    ref: 2
+  tgt:
+    tgt: 2
+  src:
+    src: 2
+  outgroup:
+    out: 2
+
+populations:
+  ref: "tests/data/test.with.outgroup.ref.list"
+  tgt: "tests/data/test.with.outgroup.tgt.list"
+  src: "tests/data/test.with.outgroup.src.list"
+  outgroup: "tests/data/test.with.outgroup.out.list"
