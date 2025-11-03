@@ -30,7 +30,7 @@ The output file has the same format as that of the `score` command.
 To extract outliers from the output of the previous score example, we can use the following command:
 
 ```
-sai outlier --score examples/results/both/1KG.nea_den.chr9.example.both.stats.tsv \
+sai outlier --score examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv \
             --output-prefix examples/results/both/1KG.nea_den.chr9.example.both.stats \ 
             --quantile 0.9
 ```
