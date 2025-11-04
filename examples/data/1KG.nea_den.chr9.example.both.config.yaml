@@ -1,9 +1,9 @@
 statistics:
-  Danc: {}
-  DD: {}
-  Dplus: {}
-  df: {}
-  fd: {}
+  Danc: True
+  DD: True
+  Dplus: True
+  df: True
+  fd: True
   U:
     ref: 
       AFR+EAS: 0.01

@@ -1,4 +1,9 @@
 statistics:
+  Danc: False
+  DD: False
+  Dplus: False
+  df: False
+  fd: False
   U:
     ref: 
       AFR+EAS: 0.01

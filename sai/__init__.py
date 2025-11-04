@@ -17,4 +17,11 @@
 #
 #    https://www.gnu.org/licenses/gpl-3.0.en.html
 
-__version__ = "1.1.0"
+
+from importlib.metadata import version, PackageNotFoundError
+
+
+try:
+    __version__ = version("sai-pg")
+except PackageNotFoundError:
+    __version__ = "0.0.0+dev"
