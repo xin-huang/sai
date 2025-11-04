@@ -518,13 +518,13 @@ DEN Denisova
 </code></pre></div>
 
 <p>This file specifies the individuals in the source populations. In this example, there are two source populations, NEA and DEN (first column), and the second column lists the corresponding sample names matching those in the VCF header.</p>
-<p>A configuration file in <a href="https://yaml.org/">YAML format</a> is required to specify the statistics to compute, ploidy settings, and population group file paths. An example can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.both.config.yaml">here</a>. In the example below, the <code>statistics</code> section lists which statistics will be computed. Empty braces (<code>{}</code>) indicate that no additional parameters are required for that statistic, while entries such as <span class="arithmatex">\(U\)</span> and <span class="arithmatex">\(Q\)</span> specify reference (<code>ref</code>), target (<code>tgt</code>), and source (<code>src</code>) populations with filtering conditions. The <code>ploidies</code> section defines the ploidy level for each population, typically 2 for diploids. The populations section provides file paths to sample lists that assign individuals to each population.</p>
+<p>A configuration file in <a href="https://yaml.org/">YAML format</a> is required to specify the statistics to compute, ploidy settings, and population group file paths. An example can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/data/1KG.nea_den.chr9.example.both.config.yaml">here</a>. In the example below, the <code>statistics</code> section lists which statistics will be computed, while entries such as <span class="arithmatex">\(U\)</span> and <span class="arithmatex">\(Q\)</span> specify reference (<code>ref</code>), target (<code>tgt</code>), and source (<code>src</code>) populations with filtering conditions. The <code>ploidies</code> section defines the ploidy level for each population, typically 2 for diploids. The populations section provides file paths to sample lists that assign individuals to each population.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
-<span class="w">  </span><span class="n">Danc</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
-<span class="w">  </span><span class="n">DD</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
-<span class="w">  </span><span class="n">Dplus</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
-<span class="w">  </span><span class="n">df</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
-<span class="w">  </span><span class="n">fd</span><span class="o">:</span><span class="w"> </span><span class="o">{}</span>
+<span class="w">  </span><span class="n">Danc</span><span class="o">:</span><span class="w"> </span><span class="n">True</span>
+<span class="w">  </span><span class="n">DD</span><span class="o">:</span><span class="w"> </span><span class="n">True</span>
+<span class="w">  </span><span class="n">Dplus</span><span class="o">:</span><span class="w"> </span><span class="n">True</span>
+<span class="w">  </span><span class="n">df</span><span class="o">:</span><span class="w"> </span><span class="n">True</span>
+<span class="w">  </span><span class="n">fd</span><span class="o">:</span><span class="w"> </span><span class="n">True</span>
 <span class="w">  </span><span class="n">U</span><span class="o">:</span>
 <span class="w">    </span><span class="n">ref</span><span class="o">:</span><span class="w"> </span>
 <span class="w">      </span><span class="n">AFR</span><span class="o">+</span><span class="n">EAS</span><span class="o">:</span><span class="w"> </span><span class="mf">0.01</span>
@@ -568,6 +568,7 @@ DEN Denisova
 <th>Ref</th>
 <th>Tgt</th>
 <th>Src</th>
+<th>Outgroup</th>
 <th>N(Variants)</th>
 <th>Danc.NEA</th>
 <th>Danc.DEN</th>
@@ -591,6 +592,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1082</td>
 <td>-0.12355029565477203</td>
 <td>-0.09559566661094993</td>
@@ -612,6 +614,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>983</td>
 <td>0.23853287087522393</td>
 <td>0.09720568452718485</td>
@@ -633,6 +636,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>985</td>
 <td>0.11191758509638665</td>
 <td>0.1371820707366662</td>
@@ -654,6 +658,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>966</td>
 <td>0.008890710141582193</td>
 <td>0.0017874385890340458</td>
@@ -675,6 +680,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1029</td>
 <td>0.0024719610094924406</td>
 <td>0.013019347645432937</td>
@@ -696,6 +702,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1063</td>
 <td>0.022253891584592442</td>
 <td>-0.05846778040121223</td>
@@ -717,6 +724,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1153</td>
 <td>0.10931478521694758</td>
 <td>-0.02727035560668536</td>
@@ -738,6 +746,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>999</td>
 <td>0.15113133237922183</td>
 <td>0.14710421254212552</td>
@@ -759,6 +768,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1007</td>
 <td>0.4129294073240463</td>
 <td>0.20572780178794584</td>
@@ -780,6 +790,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>1060</td>
 <td>0.40683688578049354</td>
 <td>0.1438067334121798</td>
@@ -801,6 +812,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>960</td>
 <td>0.40565740562034003</td>
 <td>0.22930692442169218</td>
@@ -822,6 +834,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>923</td>
 <td>0.21619895332973812</td>
 <td>0.19275643241641574</td>
@@ -843,6 +856,7 @@ DEN Denisova
 <td>AFR+EAS</td>
 <td>EUR</td>
 <td>NEA,DEN</td>
+<td>NA</td>
 <td>512</td>
 <td>0.3881193782134191</td>
 <td>0.3589872405156586</td>
@@ -891,6 +905,10 @@ DEN Denisova
 <tr>
 <td>Src</td>
 <td>Source population.</td>
+</tr>
+<tr>
+<td>Outgroup</td>
+<td>Outgroup population.</td>
 </tr>
 <tr>
 <td>N(Variants)</td>
