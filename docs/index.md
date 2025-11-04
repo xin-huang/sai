@@ -18,6 +18,7 @@
 - natsort=8.4.0
 - numpy=1.26.4
 - pandas=2.2.1
+- pydantic=2.11.7
 - pysam=0.23.0
 - python=3.9.19
 - pytest=8.1.1
