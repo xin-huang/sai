@@ -916,51 +916,51 @@ DEN Denisova
 </tr>
 <tr>
 <td>Danc.src1</td>
-<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src1 as the source population.</td>
 </tr>
 <tr>
 <td>Danc.src2</td>
-<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_{anc}\)</span> statistic using src2 as the source population.</td>
 </tr>
 <tr>
 <td>DD.src1</td>
-<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src1 as the source population.</td>
 </tr>
 <tr>
 <td>DD.src2</td>
-<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D_D\)</span> statistic using src2 as the source population.</td>
 </tr>
 <tr>
 <td>Dplus.src1</td>
-<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src1 as the source population.</td>
 </tr>
 <tr>
 <td>Dplus.src2</td>
-<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(D^+\)</span> statistic using src2 as the source population.</td>
 </tr>
 <tr>
 <td>df.src1</td>
-<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src1 as the source population.</td>
 </tr>
 <tr>
 <td>df.src2</td>
-<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(d_f\)</span> statistic using src2 as the source population.</td>
 </tr>
 <tr>
 <td>fd.src1</td>
-<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src1 as the source population</td>
+<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src1 as the source population.</td>
 </tr>
 <tr>
 <td>fd.src2</td>
-<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src2 as the source population</td>
+<td>Value of the <span class="arithmatex">\(f_d\)</span> statistic using src2 as the source population.</td>
 </tr>
 <tr>
 <td>U</td>
-<td>Value of the <span class="arithmatex">\(U\)</span> statistic using both src1 and src2 as the source populations</td>
+<td>Value of the <span class="arithmatex">\(U\)</span> statistic using both src1 and src2 as the source populations.</td>
 </tr>
 <tr>
 <td>Q</td>
-<td>Value of the <span class="arithmatex">\(Q\)</span> statistic using both src1 and src2 as the source populations</td>
+<td>Value of the <span class="arithmatex">\(Q\)</span> statistic using both src1 and src2 as the source populations.</td>
 </tr>
 </tbody>
 </table>
@@ -976,7 +976,7 @@ DEN Denisova
 </code></pre></div>
 
 <p>We provide a BED file to specify the ancestral allele for each variant, based on alignments from <a href="https://ftp.ensembl.org/pub/release-75/fasta/ancestral_alleles/">Ensembl</a>.
-In this example, for the <span class="arithmatex">\(U\)</span> statistic, the <code>ref</code> entry in the configuration file specifies that the allele frequency must be less than 0.01 in the AFR+EAS population, the <code>src</code> entries require the allele to be fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes, and the <code>tgt</code> entry indicates that the allele frequency must be greater than 0.5 in the EUR population. Similarly, for the <span class="arithmatex">\(Q\)</span> statistic, the <code>tgt</code> entry specifies the quantile of the derived allele frequencies in the EUR population at 0.95. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv">here</a>.</p>
+In this example, for the <span class="arithmatex">\(U\)</span> statistic, the <code>ref</code> entry in the configuration file specifies that the allele frequency must be less than 0.01 in the AFR+EAS population, the <code>src</code> entries require the allele to be fixed (<code>=1</code>) in both Neanderthal and Denisovan genomes, and the <code>tgt</code> entry indicates that the allele frequency must be greater than 0.5 in the EUR population. Similarly, for the <span class="arithmatex">\(Q\)</span> statistic, the <code>tgt</code> entry specifies the quantile of the derived allele frequencies in the EUR population at 0.95. The output is shown above and can be found <a href="https://github.com/xin-huang/sai/blob/main/examples/results/both/1KG.nea_den.chr9.example.both.stats.scores.tsv">here</a>. For <span class="arithmatex">\(D^+\)</span>, <span class="arithmatex">\(D_{anc}\)</span>, <span class="arithmatex">\(d_f\)</span> and <span class="arithmatex">\(f_d\)</span>, if no outgroup is provided, then the derived allele frequency is assumed to be 1 in the outgroup.</p>
 <p>The <code>src</code> entries can be set as Nea: "=1", Den: "=0" or the reverse to identify lineage-specific variants:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">statistics</span><span class="o">:</span>
 <span class="w">  </span><span class="n">U</span><span class="o">:</span>
