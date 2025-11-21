@@ -2,7 +2,7 @@
 
 `sai` is a Python package for **S**tatistics for **A**daptive **I**ntrogression. It detects candidate regions of adaptive introgression from population genomic datasets. Currently, it supports:
 
-- The average difference of squence divergence ($D_D$ statistic) proposed by Huang et al. (2025).
+- The average difference of sequence divergence ($D_D$ statistic) proposed by [Huang et al. (2025)](https://doi.org/10.1093/molbev/msaf295).
 - The $D^+$ and $D_{anc}$ statistics proposed by [Fang et al. (2024)](https://doi.org/10.1371/journal.pgen.1010155).
 - The distance fraction ($d_f$ statistic) proposed by [Pfeifer and Kapan (2019)](https://doi.org/10.1186/s12859-019-2747-z).
 - The number of uniquely shared sites ($U$ statistic) and the quantile of the derived allele frequencies in such sites ($Q$ statistic) proposed by [Racimo et al. (2017)](https://doi.org/10.1093/molbev/msw216).
