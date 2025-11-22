@@ -12,9 +12,8 @@
 
 ## Requirements
 
-`sai` works on Linux operating systems and tested with the following:
+`sai` works on Linux operating systems and is tested with the following:
 
-- matplotlib=3.9.1
 - natsort=8.4.0
 - numpy=1.26.4
 - pandas=2.2.1
