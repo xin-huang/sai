@@ -177,11 +177,6 @@ def read_geno_data(
         if filter_missing:
             if np.any(missing_mask):
                 chrom_data = filter_geno_data(chrom_data, ~missing_mask)
-        else:
-            if np.any(missing_mask):
-                raise ValueError(
-                    "Missing data is found. Please remove variants with missing data or enable filtering."
-                )
 
         if anc_alleles:
             chrom_data = check_anc_allele(chrom_data, anc_alleles, chr_name)

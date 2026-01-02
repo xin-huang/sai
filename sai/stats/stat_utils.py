@@ -19,36 +19,37 @@
 
 
 import numpy as np
+import allel
 from typing import Tuple, Optional, Union
 
 
 def calc_freq(gts: np.ndarray, ploidy: int = 1) -> np.ndarray:
     """
-    Calculates allele frequencies, supporting both phased and unphased data.
+    Calculate the frequency of allele 1 per site.
 
     Parameters
     ----------
     gts : np.ndarray
-        A 2D numpy array where each row represents a locus and each column represents an individual.
-    ploidy : int, optional
-        Ploidy level of the organism. If ploidy=1, the function assumes phased data and calculates
-        frequency by taking the mean across individuals. For unphased data, it calculates frequency by
-        dividing the sum across individuals by the total number of alleles. Default is 1.
+        Genotype data.
+    ploidy : int
+        Ploidy level.
 
     Returns
     -------
     np.ndarray
-        An array of allele frequencies for each locus.
-
-    Raises
-    ------
-    ValueError
-        If ploidy is not a positive integer.
+        ALT allele frequency per locus.
     """
     if not isinstance(ploidy, int) or ploidy <= 0:
         raise ValueError("ploidy must be a positive integer.")
 
-    return np.sum(gts, axis=1) / (gts.shape[1] * ploidy)
+    mask = gts < 0  # remove missing data as scikit-allel converts missing data to -1
+    called = (~mask).sum(axis=1)
+
+    num = np.where(~mask, gts, 0).sum(axis=1, dtype=float)
+    den = called * ploidy
+
+    out = np.full(gts.shape[0], np.nan, dtype=float)
+    return np.divide(num, den, out=out, where=den > 0)
 
 
 def compute_matching_loci(
@@ -117,6 +118,17 @@ def compute_matching_loci(
         for src_gts, ploidy_val in zip(src_gts_list, ploidy[2:])
     ]
 
+    valid = (
+        np.isfinite(ref_freq)
+        & (ref_freq >= 0)
+        & (ref_freq <= 1)
+        & np.isfinite(tgt_freq)
+        & (tgt_freq >= 0)
+        & (tgt_freq <= 1)
+    )
+    for src_freq in src_freq_list:
+        valid &= np.isfinite(src_freq) & (src_freq >= 0) & (src_freq <= 1)
+
     # Check match for each `y`
     op_funcs = {
         "=": lambda src_freq, y: src_freq == y,
@@ -141,7 +153,7 @@ def compute_matching_loci(
         all_match = all_match_y | all_match_1_minus_y
 
         # Identify loci where all sources match `1 - y` for frequency inversion
-        inverted = all_match_1_minus_y
+        inverted = all_match_1_minus_y & valid
 
         # Invert frequencies for these loci
         ref_freq[inverted] = 1 - ref_freq[inverted]
@@ -149,8 +161,9 @@ def compute_matching_loci(
     else:
         all_match = all_match_y
 
-    # Final condition: locus must satisfy source matching and have `ref_freq < w`
-    condition = all_match & (ref_freq < w)
+    # Final condition: locus must satisfy source matching and have `ref_freq < w` and have valid frequency
+    # condition = all_match & (ref_freq < w)
+    condition = valid & all_match & (ref_freq < w)
 
     return ref_freq, tgt_freq, condition
 
