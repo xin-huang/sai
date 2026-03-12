@@ -114,7 +114,7 @@ class WindowGenerator(DataGenerator):
             filter_ref=False,
             filter_tgt=False,
             filter_src=False,
-            filter_missing=True,
+            filter_missing=False,
         )
 
         self.ref_data = results["ref"][0]

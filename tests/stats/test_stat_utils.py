@@ -36,6 +36,18 @@ def test_phased_data():
     )
 
 
+def test_phased_data_with_missing_data():
+    gts = np.array([[1, -1, -1, 1], [-1, -1, -1, -1], [1, -1, 1, 1]])
+    expected_frequency = np.array([1.0, np.nan, 1.0])
+    result = calc_freq(gts, ploidy=1)
+    np.testing.assert_array_almost_equal(
+        result,
+        expected_frequency,
+        decimal=6,
+        err_msg="Phased data with missing data test failed.",
+    )
+
+
 def test_unphased_diploid_data():
     # Unphased data, ploidy = 2 (diploid)
     gts = np.array([[1, 1], [0, 0], [2, 2]])
@@ -46,6 +58,18 @@ def test_unphased_diploid_data():
         expected_frequency,
         decimal=6,
         err_msg="Unphased diploid data test failed.",
+    )
+
+
+def test_unphased_diploid_data_with_missing_data():
+    gts = np.array([[1, -1], [0, 0], [-2, 2]])
+    expected_frequency = np.array([0.5, 0.0, 1.0])
+    result = calc_freq(gts, ploidy=2)
+    np.testing.assert_array_almost_equal(
+        result,
+        expected_frequency,
+        decimal=6,
+        err_msg="Unphased diploid data with missing data test failed.",
     )
 
 
