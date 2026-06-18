@@ -12,12 +12,6 @@ theme:
     accent: cyan
 plugins:
   - search
-  - mkdocstrings:
-      default_handler: python
-      handlers:
-        python:
-          rendering:
-            show_source: true
 markdown_extensions:
   - extra
   - tables
